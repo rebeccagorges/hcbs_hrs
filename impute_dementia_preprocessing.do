@@ -2,6 +2,9 @@
 **August 2016
 **Based on code from Amy Kelley , Evan Bollends Lund via Github
 **pre processing steps only
+**saves 2 datasets
+**1. proxy interview IQCODE: proxycog_allyrs2.dta
+**2. adams dementia diagnoses:  dementia_dx_adams_wave1_only.dta
 
 capture log close
 clear all
@@ -18,7 +21,6 @@ cd `data'
 ***************************************************************************
 **Get proxy interview questions re cognition from main core ds
 ***************************************************************************
-
 **for 1998,2000 waves
 capture program drop proxycog 
 program define proxycog
@@ -138,4 +140,72 @@ save proxycog_allyrs2.dta, replace
 ***************************************************************************
 ** Get ADAMS data, diagnosis for comparison to imputations
 ***************************************************************************
-**tracker file ADAMS1 indicates r's that were in ADAMS study sub-sample
+/*Note: this do file constructs a panel dataset with categorical variables of 
+ cognitive diagnosis based on the final primary diagnosis at each adams_wave as well
+ as the interview date.
+ 
+ The core_year variable indicates the HRS core interview wave preceding the first 
+ ADAMS assessment (some were 2000, most were 2002)
+ 
+ Code here from Evan Bollends-Lund on 9/1/16*/
+use `data'\adams_raw\stata_all_waves\ADAMS1AD_R.dta, clear
+gen adams_wave=1
+
+label define adams_wave 1 "A" 2 "B" 3 "C" 4 "D"
+label values adams_wave adams_wave
+
+append using `data'\adams_raw\stata_all_waves\ADAMS1BD_R.dta
+replace adams_wave=2 if adams_wave==.
+
+append using `data'\adams_raw\stata_all_waves\ADAMS1CD_R.dta
+replace adams_wave=3 if adams_wave==.
+
+append using `data'\adams_raw\stata_all_waves\ADAMS1DD_R.dta
+replace adams_wave=4 if adams_wave==.
+rename *,l
+
+tab adams_wave, missing
+
+gen dx_adams=.
+
+label var dx_adams "Final Diagnosis"
+label define dx_adams 1 "Demented" 2 "CIND" 3 "Normal/Non-Case"
+label values dx_adams dx_adams
+
+foreach x in ad bd cd dd {
+	replace dx_adams=1 if `x'fdx1<20 & !missing(`x'fdx1)
+	replace dx_adams=2 if `x'fdx1>=20 & `x'fdx1<31 & !missing(`x'fdx1)
+	replace dx_adams=3 if `x'fdx1==31 & !missing(`x'fdx1)
+}
+
+gen id=hhid+pn
+
+keep id hhid pn adams_wave dx_adams*
+
+gen dementia=(dx==1)
+gen cind=(dx==2)
+gen normal_cog=(dx==3)
+
+**merge final dignosis with ADAMS tracker file
+merge m:1 hhid pn using `data'\adams_raw\stata_all_waves\ADAMS1TRK_R.dta, ///
+ keepusing(hhid pn amonth ayear bmonth byear cmonth cyear dmonth dyear wavesel) nogen
+
+foreach x in month year {
+gen adams_`x'=a`x' if adams_wave==1
+replace adams_`x'=b`x' if adams_wave==2
+replace adams_`x'=c`x' if adams_wave==3
+replace adams_`x'=d`x' if adams_wave==4
+drop a`x' b`x' c`x' d`x'
+}
+
+gen core_year=2000 if wavesel==1
+replace core_year=2002 if wavesel==2
+drop wavesel
+
+save dementia_dx_adams.dta, replace
+
+keep if adams_wave==1
+save dementia_dx_adams_wave1_only.dta, replace
+
+******************************************************************************
+log close
