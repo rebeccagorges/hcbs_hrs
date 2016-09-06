@@ -4,7 +4,8 @@
 **Adds in variables from other HRS datasets
 **   Rand family dataset
 **   Dementia probability dataset (user contributed, Hurd 2013 NEJM paper)
-**Final dataset is saved as 
+**   HRS xwave cognition dataset
+**Final dataset is saved as rand_addl_ds_3.dta
 
 capture log close
 clear all
@@ -93,7 +94,7 @@ tab rhlpadlkn wave, missing
 ****************************************************************************
 **Probability of dementia 1998-2006 waves only
 ****************************************************************************
-use `data'\public_raw\DementiaPredictedProbabilities\pdem_withvarnames.dta
+use `data'\public_raw\DementiaPredictedProbabilities\pdem_withvarnames.dta, clear
 
 gen year=prediction_year-1
 la var year "Interview year=prediction year-1"
@@ -113,5 +114,60 @@ tab year if _merge==3, missing
 drop _merge
 
 save `data'\rand_addl_ds_2.dta, replace
+
+****************************************************************************
+**Xwave cognition imputation dataset (for self interviews only)
+****************************************************************************
+
+**first set up cognition dataset from wide to long format
+use `data'\public_raw\CogImp\COGIMP9212A_r.dta, clear
+rename *,l
+
+egen hhidpn=concat(hhid pn)
+destring hhidpn, replace
+save cogimpds_raw.dta, replace
+
+**get individual wave ds, then combine
+forvalues i=3/11{
+use cogimpds_raw.dta, clear
+
+keep hhidpn r`i'status r`i'imrc r`i'dlrc r`i'ser7 r`i'bwc20 r`i'mo r`i'dy r`i'yr r`i'dw ///
+r`i'scis r`i'cact r`i'pres r`i'vp r`i'vocab r`i'mstot r`i'cogtot
+
+gen year=`i'*2+1990
+gen wave=`i'
+
+keep if r`i'status==1 //only keep completed self interviews with part d questions asked
+drop r`i'status
+
+**rename variables with common variable names
+local varlist imrc dlrc ser7 bwc20 mo dy yr dw scis cact pres vp vocab mstot cogtot
+
+foreach name in `varlist'{
+	rename r`i'`name' r`name'
+	}
+
+save cogimp`i'.dta,replace
+}	
+
+**merge datasets
+use cogimp3.dta, clear
+forvalues i=4/11{
+append using cogimp`i'.dta
+}
+save cogimpds_long.dta,replace
+
+**merge into main dataset
+use rand_addl_ds_2.dta,replace
+sort hhidpn year 
+
+merge 1:1 hhidpn year using cogimpds_long.dta
+tab year if _merge==3, missing
+tab rproxy if _merge==1, missing
+drop if _merge==2
+
+drop _merge
+
+save `data'\rand_addl_ds_3.dta, replace
 
 log close

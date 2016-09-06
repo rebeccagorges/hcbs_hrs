@@ -1,6 +1,6 @@
 **Rebecca Gorges
 **July 2016
-**Starts with rand_addl_ds_2.dta, long version of RAND core dataset 
+**Starts with rand_addl_ds_3.dta, long version of RAND core dataset 
 ** with additional data added from other HRS sources
 **Creates outcome and control variables from core interviews (no MEDPAR linkage)
 **Final dataset is saved as hrs_waves3to11_vars.dta
@@ -18,7 +18,7 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **long ds with waves 3-11 from RAND
-use rand_addl_ds_2.dta, clear
+use rand_addl_ds_3.dta, clear
 
 *****************************************************************************
 ** Outcome variables

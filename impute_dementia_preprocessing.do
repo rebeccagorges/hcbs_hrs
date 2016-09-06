@@ -134,6 +134,8 @@ tab pc1 year,missing
 sum iqtotal, detail
 sum iqmean, detail
 
+keep hhid pn year pc* iqmiss iqtotal iqmean
+
 save proxycog_allyrs2.dta, replace
 
 
@@ -205,6 +207,7 @@ drop wavesel
 save dementia_dx_adams.dta, replace
 
 keep if adams_wave==1
+rename core_year year
 save dementia_dx_adams_wave1_only.dta, replace
 
 ******************************************************************************

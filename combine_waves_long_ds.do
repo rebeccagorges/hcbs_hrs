@@ -18,7 +18,7 @@ local data E:\hrs\data
 cd `data'
 
 *********************************************************************************
-**save dataset with just needed variables
+**save dataset with just needed variables, get cognition variables from HRS xwave file
 use `data'\public_raw\rndhrs_o.dta, clear
 
 keep *hhidpn *hhid pn inw* *iwstat *shlt *hlthlm *depres *effort *sleepr *whappy *flone *fsad *going *enlife ///
@@ -26,7 +26,7 @@ keep *hhidpn *hhid pn inw* *iwstat *shlt *hlthlm *depres *effort *sleepr *whappy
 *bed *bedh *bede *toilt *toilth *walkra *dressa *batha *eata *beda *toilta ///
 *adla *adlwa *map *phone *money *meds *shop *meals *mapa *phonea *moneya ///
 *medsa *shopa *mealsa *iadla *iadlza *bmi *oopmd *lbrf *retemp *unemp *jhours *jhour2 *hosp *hspnit ///
-*memry *memryq *memrye *memryf *alzhe *demen *memrys *slfmem *fslfme *pstmem *fpstme *cogtot ///
+*memry *memryq *memrye *memryf *alzhe *demen *memrys *slfmem *fslfme *pstmem *fpstme ///
 *nrshom *nrsnit *nhmliv *nhmday *homcar ///
 *byear *bmonth *bflag *bdate *dyear *dmonth *ddate *nyear *nmonth *ndate *iyear ///
 *imonth *idate *ndatef *idatef ///
@@ -36,7 +36,7 @@ keep *hhidpn *hhid pn inw* *iwstat *shlt *hlthlm *depres *effort *sleepr *whappy
 *itot *atota raeduc *wthh *proxy *iwbeg ///
 *iwbegf *iwend *iwendf *iwmid *iwmidf *iwendm *iwendy ///
 *higov *govmr *govmd *govva *covr *covs *henum *hiothp *hiltc *tyltc  ///
-*hibp *diab *cancr *lung *heart *strok *psych *arthr  
+*hibp *diab *cancr *lung *heart *strok *psych *arthr 
 
 save rand_trunc.dta, replace  
 
@@ -59,7 +59,7 @@ keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'shlt *`i'hlthlm *`i'depres 
 *`i'adla *`i'adlwa *`i'map *`i'phone *`i'money *`i'meds *`i'shop *`i'meals ///
 *`i'mapa *`i'phonea *`i'moneya *`i'medsa *`i'shopa *`i'mealsa *`i'iadla ///
 *`i'iadlza *`i'bmi *`i'oopmd *`i'lbrf *`i'retemp *`i'unemp *`i'jhours *`i'jhour2 *`i'hosp *`i'hspnit ///
-*`i'slfmem *`i'fslfme *`i'pstmem *`i'fpstme *`i'cogtot ///
+*`i'slfmem *`i'fslfme *`i'pstmem *`i'fpstme  ///
 *`i'nrshom *`i'nrsnit r`i'nhmliv s`i'nhmliv *`i'nhmday *`i'homcar rabyear rabmonth ///
 rabflag rabdate radyear radmonth raddate ranyear ranmonth randate raiyear ///
 raimonth raidate randatef raidatef ///
@@ -88,7 +88,7 @@ local rsvars iwstat shlt hlthlm depres effort sleepr whappy flone fsad going enl
  bed bedh bede toilt toilth walkra dressa batha eata beda toilta ///
 adla adlwa map phone money meds shop meals mapa phonea moneya ///
 medsa shopa mealsa iadla iadlza bmi oopmd lbrf retemp unemp jhours jhour2 hosp hspnit ///
-slfmem fslfme pstmem fpstme cogtot ///
+slfmem fslfme pstmem fpstme  ///
 nrshom nrsnit nhmliv nhmday homcar agem_b agey_b agem_e agey_e ///
 mstat mpart mcurln  livsib   proxy iwbeg ///
 iwbegf iwend iwendf iwmid iwmidf iwendm iwendy ///
