@@ -149,9 +149,7 @@ histogram pdem
 preserve
 keep hhidpn rproxy pdem prob_dementia dx_adams year
 rename prob_dementia prob_hurd
-save `data'\pdem_withvarnames_ebl.dta, replace
-
-
+save `data'\pdem_withvarnames_allwaves.dta, replace
 
 log close
 

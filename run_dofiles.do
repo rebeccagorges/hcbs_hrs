@@ -18,5 +18,9 @@ do `dofiles'/impute_dementia_preprocessing.do
 
 do `dofiles'/impute_dementia_probability.do
 
+
+**home care variables created from raw interview questions,helper files
+do `dofiles'/home_care.do
+
 **first pass at sample sizes - preliminary
 do `dofiles'/sample_size_tables.do

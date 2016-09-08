@@ -17,8 +17,8 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 
 cd `data'
 
-**long ds with waves 3-11 from RAND with variables coded
-use `data'\hrs_wproxycog.dta, clear
+**long ds with waves 4-11 from RAND with variables coded
+use `data'\hrs_sample.dta, clear
 
 **dementia vs no using TICS, dementia probability, self report
 tab prob_dem_gt50, missing
@@ -174,10 +174,48 @@ ctitles("", "n","%") ///
 rtitles("None reported"\"Nursing home only"\"Home care only" \"NH+Home care" ) ///
 landscape addtable
 
+**table looking at the different ltc questions
+tab r_sr_ltc_cat home_care2_ind , missing
+tab r_sr_ltc_cat home_care_other_svc_ind,missing
+replace home_care_other_svc_ind=0 if rnhmliv==1 & missing(home_care_other_svc_ind)
+
+gen r_sr_ltc_cat2 = 0 if sr_nh_ind==0&sr_homecare_ind==0&home_care_other_svc_ind==0
+replace r_sr_ltc_cat2 = 1 if sr_nh_ind==1&sr_homecare_ind==0&home_care_other_svc_ind==0
+replace r_sr_ltc_cat2 = 2 if sr_nh_ind==0&(sr_homecare_ind==1|home_care_other_svc_ind==1)
+replace r_sr_ltc_cat2 = 3 if sr_nh_ind==1&(sr_homecare_ind==1|home_care_other_svc_ind==1)
+//la def ltccat 0 "No LTC" 1 "Nursing home only" 2 "Home care only" 3 "Nursing home and home care"
+la val r_sr_ltc_cat2 ltccat
+la var r_sr_ltc_cat2 "R self report nh and/or home care, hc includes med and other services"
+tab r_sr_ltc_cat2,missing
+
+tab r_sr_ltc_cat r_sr_ltc_cat2,missing 
+
+**second version of the table using this broader home care definition
+mat tab2=J(4,2,.)
+
+tab r_sr_ltc_cat2, missing matcell(t2)
+local n=r(N)
+local r=1
+forvalues i=1/4 {
+mat tab2[`r',1]=t2[`i',1]
+mat tab2[`r',2]=t2[`i',1]/r(N)*100
+local r = `r'+1
+}
+frmttable, statmat(tab2) store(tab2) sdec(0,2)
+
+outreg using `logpath'\sample_tables_aug2016.doc, ///
+replay(tab2) title("Table 2A - Long term care use, n=`n'" \ ///
+"Home care defined as medical or other special services") ///
+note("Limited to 1998-2006 waves, age 70+") ///
+ctitles("", "n","%") ///
+rtitles("None reported"\"Nursing home only"\"Home care only" \"NH+Home care" ) ///
+landscape addtable
+
 *********************************************************************
 **create table 3 Care setting x Dementia
 *********************************************************************
 **limit to those with some type of home care
+preserve 
 drop if inlist(r_sr_ltc_cat,0,.)
 tab r_sr_ltc_cat
 local n=r(N)
@@ -266,5 +304,98 @@ ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
 "","","n","%","n","%","n","%") ///
 landscape addtable
 
+restore
+outreg, clear
+*************************************************************************************
+**do again with broader home care definition including other services (not medical)
+**this is sloppy, fix it later!
+drop if inlist(r_sr_ltc_cat2,0,.)
+tab r_sr_ltc_cat2
+local n=r(N)
+
+**indicators for race-ethnicity categories
+tab r_race_eth_cat, gen(race_ind)
+la var race_ind1 "White"
+la var race_ind2 "Black"
+la var race_ind3 "Hispanic"
+la var race_ind4 "Other"
+
+**indicator for non-medicaid
+tab rmedicaid_sr, gen(mdcaid)
+la var mdcaid1 "R No Medicaid, self report"
+
+**indicator for income < 25% of sample income
+sum hitot, detail
+sca inc25co=r(p25)
+gen incomeltp25 = 1 if hitot<=inc25co & !missing(hitot)
+replace incomeltp25 = 0 if hitot>inc25co & !missing(hitot)
+tab incomeltp25, missing
+la var incomeltp25 "Income <25 percentile (annual < $13200)"
+
+tab incomeltp25, gen(incomeltp25)
+la var incomeltp251 "Income >25 percentile"
+
+**cognition variables, using both proxy and self interviews
+gen cog_comb=1 if rcogimp_tics_ind==1 | iqmean_gtco==1
+replace cog_comb=0 if (rcogimp_tics_ind==0 & rproxy==0) | (iqmean_gtco==0 & rproxy==1)
+la var cog_comb "TICS score <8 or IQMEAN>3.38"
+
+tab cog_comb rproxy, missing
+
+gen cog_comb1=1 if tics_ltp10==1 | iqmean_gtp90==1
+replace cog_comb1=0 if (tics_ltp10==0 & rproxy==0) | (iqmean_gtp90==0 & rproxy==1)
+la var cog_comb1 "TICS score 10% or IQMEAN>90%"
+
+gen cog_comb2=1 if tics_ltp25==1 | iqmean_gtp75==1
+replace cog_comb2=0 if (tics_ltp25==0 & rproxy==0) | (iqmean_gtp75==0 & rproxy==1)
+la var cog_comb2 "TICS score<25% or IQMEAN>75%"
+
+gen cog_comb3=1 if tics_ltp50==1 | iqmean_gtp50==1
+replace cog_comb3=0 if (tics_ltp50==0 & rproxy==0) | (iqmean_gtp50==0 & rproxy==1)
+la var cog_comb3 "TICS score<50% or IQMEAN>50%"
+
+mat tab3=J(1,7,.)
+
+tab r_sr_ltc_cat2, missing matcell(t3)
+local n=r(N)
+local c=2
+
+forvalues i=1/3 {
+mat tab3[1,`c']=t3[`i',1]
+mat tab3[1,`c'+1]=t3[`i',1]/r(N)*100
+local c = `c'+2
+}
+mat rowname tab3="Overall sample n"
+frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
+
+**split by categories
+mat tab3=J(1,7,.)
+foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+   prob_dem_gt50 prob_dem_gt70 prob_dem_gt90 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   race_ind1 race_ind2 race_ind3 race_ind4{
+	tab r_sr_ltc_cat2 if `var'==1, missing matcell(t3)
+	
+	mat tab3[1,1]=r(N)
+	
+	local c = 2
+	forvalues i=1/3 {
+		mat tab3[1,`c']=t3[`i',1]
+		mat tab3[1,`c'+1]=t3[`i',1]/r(N)*100
+		local c = `c'+2
+		}
+	mat rowname tab3=`var'
+
+	frmttable, statmat(tab3) store(tab3) sdec(0,0,2,0,2,0,2) varlabels
+
+	outreg, replay(tab3a_1) append(tab3) store(tab3a_1)
+}
+
+outreg using `logpath'\sample_tables_aug2016.doc, ///
+replay(tab3_a) append(tab3a_1) title("Table 3A - LTC split by dementia, medicaid, race, n=`n'" \ ///
+"Home care includes medical care and special services" ) ///
+note("Limited to 1998-2006 waves, age 70+, report nursing home and/or home care use") ///
+ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
+"","","n","%","n","%","n","%") ///
+landscape addtable
 
 log close
