@@ -347,6 +347,8 @@ by hhidpn: gen helper_adl_count=_N
 by hhidpn: gen n=_n
 keep if n==1
 drop n helper_type_adl helper_paid_adl
+rename core_year year
+destring hhidpn, replace
 save help_1998_adl_all.dta,replace
 
 /* legend for helper relationship variable, 1998
@@ -646,6 +648,16 @@ use hrs_wproxycog.dta, clear
 sort hhidpn year
 merge 1:1 hhidpn year using home_care_to_merge.dta
 keep if _merge==3
+
+drop _merge
+merge 1:1 hhidpn year using help_1998_adl_all.dta
+tab _merge
 save hrs_sample.dta,replace
+
+*************************************************************************
+keep if year==1998
+
+save hrs_sample_1998.dta,replace
+
 **********************************************************************************
 log close

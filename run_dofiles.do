@@ -10,13 +10,17 @@ do `dofiles'/combine_waves_long_ds.do
 **add data from Rand family file, probability of dementia
 do `dofiles'/addl_data_merge.do
 
-**outcomes variables coding
+**initial outcomes variables coding
 do `dofiles'/coding_outcomes.do
 
-**impute dementia probabilty following Hurd method
-do `dofiles'/impute_dementia_preprocessing.do
+**generate IQCODE, ADAMS datasets to merg in next step
+do `dofiles'/impute_dementia_preprocessing.do 
 
+**impute dementia probabilty following Hurd method
 do `dofiles'/impute_dementia_probability.do
+
+**check dementia imputations by replicating Hurd tables
+do `dofiles'/impute_dementia_checks.do
 
 
 **home care variables created from raw interview questions,helper files

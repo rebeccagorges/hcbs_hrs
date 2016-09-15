@@ -7,6 +7,10 @@
 **   HRS xwave cognition dataset
 **Final dataset is saved as rand_addl_ds_3.dta
 
+** Note, additional data added in impute_dementia_probability.do file: 
+**	 HRS survey, IQCODE components for proxy interview cognition measure
+**	 ADAMS dementia diagnosis
+
 capture log close
 clear all
 set more off
@@ -170,4 +174,5 @@ drop _merge
 
 save `data'\rand_addl_ds_3.dta, replace
 
+*************************************************************
 log close
