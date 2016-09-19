@@ -22,7 +22,6 @@ do `dofiles'/impute_dementia_probability.do
 **check dementia imputations by replicating Hurd tables
 do `dofiles'/impute_dementia_checks.do
 
-
 **home care variables created from raw interview questions,helper files
 do `dofiles'/home_care.do
 

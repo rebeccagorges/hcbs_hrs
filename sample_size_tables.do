@@ -18,7 +18,7 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **long ds with waves 4-11 from RAND with variables coded
-use `data'\hrs_sample.dta, clear
+use `data'\pdem_help_fullds_allwaves.dta, clear
 
 **dementia vs no using TICS, dementia probability, self report
 tab prob_dem_gt50, missing
