@@ -18,49 +18,40 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **long ds with waves 4-11 from RAND with variables coded
-use `data'\pdem_help_fullds_allwaves.dta, clear
+use hrs_sample.dta, clear
+
+tab year, missing
 
 **dementia vs no using TICS, dementia probability, self report
-tab prob_dem_gt50, missing
+la def pred_dem_cat 1 "Dementia" 2"CIND" 3"Normal"
+la val pred_dem_cat pred_dem_cat
+ 
+tab pred_dem_cat, missing
 tab sr_mem_dis_any , missing
 tab rcogimp_tics_ind, missing
 
-**for waves (4-8) with probability dementia imputed, age>=70 
-tab prob_dem_gt50 wave, missing
-drop if inlist(wave,3,9,10,11)
+**indicators for dementia, cind categories
+tab pred_dem_cat,gen(pred_dem_cat)
+la var pred_dem_cat1 "Predicted dementia"
+la var pred_dem_cat2 "Predicted CIND"
+la var pred_dem_cat3 "Predicted normal"
 
-tab prob_dem_gt50 age_lt_70, missing
+**wave 3(1996) doesn't have full cog battery asked so drop from the ds
+tab pred_dem_cat1 wave, missing
+drop if wave==3
+
+tab pred_dem_cat1 age_lt_70, missing
 drop if age_lt_70==1
 
-tab prob_dem_gt50, missing
-tab prob_dem_gt70, missing
-tab prob_dem_gt90, missing
-
+tab pred_dem_cat1, missing
 tab sr_mem_dis_any , missing
 tab rcogimp_tics_ind, missing
-tab cog_missing rproxy, missing
+tab cog_missing rproxy, missing //cog_missing=1 if both iqcode and tics are missing
 tab iqcode_missing rproxy, missing
 
-sum prob_dementia if cog_missing==1, detail
-sum prob_dementia if cog_missing==1 &rproxy==1, detail
-sum prob_dementia if cog_missing==1 &rproxy==0, detail
-
-//all obs with prob dementia but no cognition score in my ds are proxy interviews
-//why?
-//check for missing components, scores not calculated if any missing iqcode questions
-gen iqcode_miss1ormore=1 if iqmiss>0 & !missing(iqmiss)
-replace iqcode_miss1ormore=0 if iqmiss==0
-tab iqcode_miss1ormore if rproxy==1
-
-sum prob_dementia if cog_missing==1 &rproxy==1 & iqcode_miss1ormore==1, detail
-sum prob_dementia if cog_missing==1 &rproxy==1 & iqcode_miss1ormore==0, detail
-
-//Hurd method includes obs with missing iqcode items, how many??
-tab iqmiss if !missing(prob_dementia) & cog_missing==1 &rproxy==1 & iqcode_miss1ormore==1, missing
-//Can't tell how this is done. Hurd includes an indicator for missing values, could this be the case here??
-//Could be either missing 
-
-tab year if cog_missing==1 &rproxy==1
+sum pdem if cog_missing==1, detail //probability dementia not calculated if cog missing in this methodology
+sum pdem if cog_missing==1 &rproxy==1, detail
+sum pdem if cog_missing==1 &rproxy==0, detail
 
 la var sr_mem_dis_any "Self report memory disease"
 la var rcogimp_tics_ind "TICS score <8"
@@ -102,7 +93,7 @@ replace iqmean_gtco=0 if iqmean<3.38
 
 la var iqmean_gtp90 "IQCODE mean score gt 90% (=5)"
 la var iqmean_gtp75 "IQCODE mean score gt 75% (>4.31)"
-la var iqmean_gtp50 "IQCODE mean score gt 50% (>3.18)"
+la var iqmean_gtp50 "IQCODE mean score gt 50% (>3.125)"
 la var iqmean_gtco "IQCODE mean >3.38"
 la var iqcode_missing "IQCODE mean missing"
 
@@ -124,7 +115,7 @@ mat tab1_2=J(1,6,.)
 foreach var in sr_mem_dis_any rcogimp_tics_ind ///
    tics_ltp10 tics_ltp25 tics_ltp50 tics_missing ///
     iqmean_gtco iqmean_gtp90 iqmean_gtp75 iqmean_gtp50 iqcode_missing ///
-   prob_dem_gt50 prob_dem_gt70 prob_dem_gt90{
+   pred_dem_ind {
 	tab `var', missing matcell(sr)
 	mat tab1_2[1,1]=sr[2,1]
 	mat tab1_2[1,2]=sr[2,1]/r(N)*100
@@ -146,10 +137,9 @@ foreach var in sr_mem_dis_any rcogimp_tics_ind ///
  
 outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab1_a) append(tab1_3) title("Table 1 - dementia classification") ///
-note("Limited to 1998-2006 waves, age 70+") ///
+note("HRS 1998-2012 waves, age 70+") ///
 ctitles("Method", "Overall sample","","Self interview","","Proxy interview" \ ///
 "","n","%","n","%","n","%") landscape replace
-
 
 *********************************************************************
 **create table 2 Care setting 
@@ -206,10 +196,56 @@ frmttable, statmat(tab2) store(tab2) sdec(0,2)
 outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab2) title("Table 2A - Long term care use, n=`n'" \ ///
 "Home care defined as medical or other special services") ///
-note("Limited to 1998-2006 waves, age 70+") ///
+note("HRS 1998-2012 waves, age 70+") ///
 ctitles("", "n","%") ///
 rtitles("None reported"\"Nursing home only"\"Home care only" \"NH+Home care" ) ///
 landscape addtable
+
+*********************************************************************
+**table 2B Home care variables comparison
+*********************************************************************
+tab sr_nh_ind, missing //self report nursing home use *a028/*n114
+tab sr_homecare_ind,missing //question re home care for med services *n198
+tab home_care_other_svc_ind, missing //question re home care for other services *n202
+tab help_paid_comb_ind, missing //question from helper file
+tab help_prof_comb, missing //relationship to helper from helper file
+
+**additional variables for combinations of hc questions
+
+gen hc_any=0
+replace hc_any=1 if sr_homecare_ind==1 | home_care_other_svc_ind==1 | help_paid_comb_ind==1 | help_prof_comb==1
+la var hc_any "Home care, any of 4 variables"
+
+la var help_prof_comb "Professional / organization ADL/IADL helper"
+local varlist sr_homecare_ind home_care_other_svc_ind help_paid_comb_ind help_prof_comb hc_any
+
+mat t2b=J(1,5,.)
+
+local r = 1
+foreach v in `varlist'{
+tab `v', matcell(c1)
+mat t2b[`r',1]=c1[2,1] //overall n
+
+tab sr_nh_ind if `v'==1, matcell(c2)
+mat t2b[`r',2]=c2[2,1] //n with nh=yes
+mat t2b[`r',3]=c2[1,1] //n with nh=no
+
+tab pred_dem_ind if `v'==1, matcell(c2)
+mat t2b[`r',4]=c2[2,1] //n with dementia=yes
+mat t2b[`r',5]=c2[1,1] //n with dementia=no
+
+mat rownames t2b=`v'  
+
+frmttable, statmat(t2b) store(tab2b_1) varlabels sdec(0)
+outreg, replay(tab2b_2) append(tab2b_1) store(tab2b_2)
+ }
+
+outreg using `logpath'\sample_tables_aug2016.doc, ///
+replay(tab2b_2) ///
+title("Table 2B - Home care variables comparison" ) ///
+ctitles("","overall","Nursing home","No nursing home","Pred dementia","No pred dementia") ///
+note("HRS 1998-2012 waves, age 70+") ///
+ addtable
 
 *********************************************************************
 **create table 3 Care setting x Dementia
@@ -278,7 +314,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 **split by categories
 mat tab3=J(1,7,.)
 foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
-   prob_dem_gt50 prob_dem_gt70 prob_dem_gt90 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   pred_dem_ind rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat if `var'==1, missing matcell(t3)
 	
@@ -299,7 +335,7 @@ foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
 
 outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab3_a) append(tab3_1) title("Table 3 - LTC split by dementia, medicaid, race, n=`n'") ///
-note("Limited to 1998-2006 waves, age 70+, report nursing home and/or home care use") ///
+note("HRS 1998-2012 waves, age 70+, report nursing home and/or home care use") ///
 ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
 "","","n","%","n","%","n","%") ///
 landscape addtable
@@ -371,7 +407,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 **split by categories
 mat tab3=J(1,7,.)
 foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
-   prob_dem_gt50 prob_dem_gt70 prob_dem_gt90 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   pred_dem_ind rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat2 if `var'==1, missing matcell(t3)
 	
@@ -393,7 +429,7 @@ foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
 outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab3_a) append(tab3a_1) title("Table 3A - LTC split by dementia, medicaid, race, n=`n'" \ ///
 "Home care includes medical care and special services" ) ///
-note("Limited to 1998-2006 waves, age 70+, report nursing home and/or home care use") ///
+note("HRS 1998-2012 waves, age 70+, report nursing home and/or home care use") ///
 ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
 "","","n","%","n","%","n","%") ///
 landscape addtable

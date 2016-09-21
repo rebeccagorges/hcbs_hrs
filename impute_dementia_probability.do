@@ -174,24 +174,9 @@ the cognition questions*/
 
 la var dx "ADAMS final diagnosis"
 
-/*local bothvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ///
-ed_hs_only ed_gt_hs r_female_ind ///
-radla riadlza ch_radla ch_riadlza noprevivw 
 
-local regvars  rdates rbwc20 rser7 rscis rcact rpres rimrc rdlrc ///
-ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
-ch_rimrc ch_rdlrc nocogprev
-
-local proxyvars iqmean missiqscore ch_iqmean ///
-prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc
-
-replace iqmean=3 if missing(iqmean) & rproxy==1
-
-tab rdates if !missing(dx) & rproxy==0, missing
-sum iqmean  if !missing(dx) & rproxy==1
-*/
-
-/*note-most missing variables excluded due to collinearity
+/*Version 1 code, from ebl
+note-most missing variables excluded due to collinearity
 this section original version from ebl with variable names updated*/
 local regvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ed_hs_only ed_gt_hs r_female_ind ///
 radla riadlza ch_radla ch_riadlza rdates rbwc20 ///
@@ -205,15 +190,41 @@ ch_rproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc ///
 missrdates missrser7 missrscis missrcact missrpres missrimrc ///
 missrdlrc missradla missriadlza
 
-oprobit dx `regvars' if rproxy==0
-//oprobit dx `bothvars' `regvars' if rproxy==0
+/*version 2 code
+Updated from version 1 to include alternate missing categorical variables
+1. noprevivw=no t-2 HRS interview, change scores set to 0
+(can remove miss adl, iadl variables, all missingness is because missing the interview)
+2. nocogprev=no t-2 HRS TICS cognition score, self interview
+(can remove miss tics components missing, b/c imputed dataset used, if missing one, missing all
+for a given interview)
+3. missiqscore=no t-2 HRS IQSCORE, proxy interview 
+4. also, for clarity, using variable prevrproxy instead of ch_rproxy to match Hurd paper 
+(they are the same thing though) */
+local bothvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ///
+ed_hs_only ed_gt_hs r_female_ind radla riadlza ch_radla ch_riadlza missradla missriadlza
+
+local regvars rdates rbwc20 rser7 rscis rcact rpres rimrc rdlrc ///
+ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
+ch_rimrc ch_rdlrc nocogprev 
+
+local proxyvars iqmean missiqscore ch_iqmean ///
+prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc ///
+
+replace iqmean=3 if missing(iqmean) & rproxy==1 //so don't drop those that have missing scores, just have addl ind
+
+**checks
+tab rdates if !missing(dx) & rproxy==0, missing
+sum iqmean  if !missing(dx) & rproxy==1
+
+//oprobit dx `regvars' if rproxy==0 //version 1 model
+oprobit dx `bothvars' `regvars' if rproxy==0 //version 2
 gen predsample=e(sample) //indicator for obs in the model
 predict pself_1 if rproxy==0 /*& ragey_e>69*/, outcome(1)
 predict pself_2 if rproxy==0 /*& ragey_e>69*/, outcome(2) 
 predict pself_3 if rproxy==0 /*& ragey_e>69*/, outcome(3)
 
-oprobit dx `proxyvars' if rproxy==1
-//oprobit dx `bothvars' `proxyvars' if rproxy==1
+//oprobit dx `proxyvars' if rproxy==1 //version 1 model
+oprobit dx `bothvars' `proxyvars' if rproxy==1 //version 2
 gen predsample2=e(sample)
 replace predsample=1 if predsample2==1
 drop predsample2

@@ -619,6 +619,15 @@ forvalues y = 1998(2)2012{
 	gen help_paid_comb_ind = 0
 	replace help_paid_comb_ind = 1 if helper_anypaid_adl==1 | helper_anypaid_iadl==1
 	la var help_paid_comb_ind "Paid helper reported (either adl or iadl) 1=yes"
+
+	foreach v in sp relative prof other{
+		gen help_`v'_comb = 0
+		replace help_`v'_comb = 1 if help_`v'_adl==1 | help_`v'_iadl==1
+		}
+	la var help_sp_comb "Spouse helper adl or iadl"
+	la var help_relative_comb "Relative (not spouse) helper adl or iadl"
+	la var help_sp_comb "Professional helper adl or iadl"
+	la var help_sp_comb "Other helper adl or iadl"
 	
 	save help_`y'_adl_all2.dta,replace
 	}
@@ -644,6 +653,10 @@ foreach v in help_comb_ind help_paid_comb_ind {
 	replace `v'=0 if _merge==1
 }
 
+foreach v in sp relative prof other{
+	replace help_`v'_comb=0 if _merge==1
+}
+
 foreach t in adl iadl{
 	foreach v in help_`t'_any	helper_`t'_count  helper_anypaid_`t' {
 		replace `v'=0 if _merge==1
@@ -657,227 +670,9 @@ tab help_comb_ind year, missing
 tab help_paid_comb_ind helper_anypaid_iadl if helper_anypaid_adl==0
 
 save pdem_help_fullds_allwaves.dta,replace
-/*
 
-***********************************************************************
-/*
-************** *OLD code from another projct **************************
-
-tab f2502 f2508 if core_year==1998, missing
-tab g2800 g2806 if core_year==2000, missing
-
-capture program drop adlsph
-program define adlsph
-	args y var n
-	replace adl_sp_helper = 1 if (core_year==`y' & `var'==`n')
-	end
-	
-gen byte adl_sp_helper = 0
-
-adlsph 1998 f2502_n 36
-adlsph 2000 g2800_n 36
-adlsph 2002 hg033_1 2
-adlsph 2004 jg033_1 2
-adlsph 2006 kg033_1 2
-adlsph 2008 lg033_1 2
-adlsph 2010 mg033_1 2
-adlsph 2012 ng033_1 2
-
-la var adl_sp_helper "ADL Spouse Main Helper, 1=yes"
-tab adl_sp_helper core_year, missing
-
-
-//note for 1998, 2000 question is different.
-gen byte adl_oth_helper = 0
-replace adl_oth_helper = 1 if (core_year==1998 & ( 21<=f2502_n<=35 & inlist(f2508,2,4,5,6) ) ///
-	 | (41<= f2502_n & f2502_n<=995 & f2502_n!=100)  )
-replace adl_oth_helper = 1 if (core_year==2000 & ( 21<=g2800_n<=35 & inlist(g2806,2,4,5,6) ) ///
-	 | (41<= g2800_n & g2800_n<=995 & g2800_n!=100)  )
-replace adl_oth_helper = 1 if core_year==2002 & (2< hg033_1 & hg033_1<21 | hg033_1==28)
-replace adl_oth_helper = 1 if core_year==2004 & ( (2< jg033_1 & jg033_1<21) | inlist(jg033_1,38,33,90,91) )
-la var adl_oth_helper "ADL Other Main Helper, 1=yes"
-tab adl_oth_helper core_year, missing
-
-//max number of helpers = 7
-//create common helper variables across all years
-gen adl_helper_1 = f2502 if (core_year==1998)
-replace adl_helper_1 = g2800 if (core_year==2000)
-replace adl_helper_1 = hg032_1 if (core_year==2002)
-replace adl_helper_1 = jg032_1 if (core_year==2004)
-la var adl_helper_1 "ADL Helper 1 PN"
-
-gen adl_helper_2 = f2516 if (core_year==1998)
-replace adl_helper_2 = g2814 if (core_year==2000)
-replace adl_helper_2 = hg032_2 if (core_year==2002)
-replace adl_helper_2 = jg032_2 if (core_year==2004)
-la var adl_helper_2 "ADL Helper 2 PN"
-
-gen adl_helper_3 = f2525 if (core_year==1998)
-replace adl_helper_3 = g2823 if (core_year==2000)
-replace adl_helper_3 = hg032_3 if (core_year==2002)
-replace adl_helper_3 = jg032_3 if (core_year==2004)
-la var adl_helper_3 "ADL Helper 3 PN"
-
-gen adl_helper_4 = f2529 if (core_year==1998)
-replace adl_helper_4 = g2827 if (core_year==2000)
-replace adl_helper_4 = hg032_4 if (core_year==2002)
-replace adl_helper_4 = jg032_4 if (core_year==2004)
-la var adl_helper_4 "ADL Helper 4 PN"
-
-gen adl_helper_5 = f2533 if (core_year==1998)
-replace adl_helper_5 = g2831 if (core_year==2000)
-replace adl_helper_5 = hg032_5 if (core_year==2002)
-replace adl_helper_5 = jg032_5 if (core_year==2004)
-la var adl_helper_5 "ADL Helper 5 PN"
-
-gen adl_helper_6 = f2537 if (core_year==1998)
-replace adl_helper_6 = g2835 if (core_year==2000)
-replace adl_helper_6 = hg032_6 if (core_year==2002)
-replace adl_helper_6 = jg032_6 if (core_year==2004)
-la var adl_helper_6 "ADL Helper 6 PN"
-
-gen adl_helper_7 = f2541 if (core_year==1998)
-replace adl_helper_7 = g2839 if (core_year==2000)
-replace adl_helper_7 = hg032_7 if (core_year==2002)
-replace adl_helper_7 = jg032_7 if (core_year==2004)
-la var adl_helper_7 "ADL Helper 7 PN"
-
-tab hg032_3,missing
-
-**************************************************************
-// IADL Helpers
-**************************************************************
-/*Who helps, part 1
-1998 Core 	F2582
-2000 Core 	G2880
-IADL helper
-1998 Core 	F2583
-2000 Core 	G2881
-2002 Core 	HG055_1
-2004 Core 	JG055_1
-2006 Core 	KG055_1
-2008 Core 	LG055_1
-2010 Core 	MG055_1
-2012 Core 	NG055_1
-
-For 2002 and later, variables are G055_2 thru G055_6
-1998 and 2000 are listed out here.
-
-Helper 2 - Does anyone else help you with these activities? 1=Yes, 5=No
-1998 Core       F2585
-2000 Core 	G2883
-Person number?
-1998 Core       F2591
-2000 Core 	G2889
-Relationship?
-1998 Core       F2592
-2000 Core 	G2890
-
-Helper 3
-1998 Core       F2594
-2000 Core 	G2892
-PN?
-1998 Core       F2596
-2000 Core 	G2894
-Relationship?
-1998 Core       F2597
-2000 Core 	G2895
-
-Helper 4
-Anyone help?
-1998 Core       F2600
-2000 Core 	G2898
-PN?
-1998 Core       F2602
-2000 Core       G2900
-Relationship?
-1998 Core       F2603
-2000 Core       G2901
-
-Helper 5
-Anyone help?
-1998 Core       F2606
-2000 Core       G2904
-PN?
-1998 Core       F2608
-2000 Core       G2906
-Relationship?
-1998 Core       F2609
-2000 Core       G2907
-
-Helper 6
-Anyone help?
-1998 Core       F2613
-2000 Core       G2911
-PN?
-1998 Core       F2614
-2000 Core       G2912
-Relationship?
-1998 Core       F2615
-2000 Core       G2913       */
-
-//need to convert 1st level questions to numeric variables for 1998,2000
-destring f2582 g2880, gen(f2582_n g2880_n) 
-tab f2582_n if core_year==1998, missing
-tab g2880_n if core_year==2000, missing
-
-gen byte iadl_sp_helper = 0
-replace iadl_sp_helper = 1 if (core_year==1998 & f2582_n==36)
-replace iadl_sp_helper = 1 if (core_year==2000 & g2880_n==36)
-replace iadl_sp_helper = 1 if (core_year==2002 & hg055_1==2)
-replace iadl_sp_helper = 1 if (core_year==2004 & jg055_1==2)
-la var iadl_sp_helper "IADL Spouse Helper, 1=yes"
-tab iadl_sp_helper core_year, missing
-
-gen byte iadl_oth_helper = 0
-replace iadl_oth_helper = 1 if (core_year==1998 & ( 21<=f2582_n<=35 & inlist(f2583,2,4,5,6) ) ///
-	 | (41<=f2582_n & f2582_n<=995 & f2582_n!=100)  )
-replace iadl_oth_helper = 1 if (core_year==2000 & ( 21<=g2880_n<=35 & inlist(g2881,1,2,4,5,6) ) ///
-	 | (41<= g2880_n & g2880_n<=995 & g2880_n!=100)  )
-replace iadl_oth_helper = 1 if (core_year==2002 & 2< hg055_1 & hg055_1<21)
-replace iadl_oth_helper = 1 if (core_year==2004 & 2< jg055_1 & jg055_1<21)
-la var iadl_oth_helper "IADL Other Helper, 1=yes"
-tab iadl_oth_helper core_year, missing
-
-//max number of helpers = 6
-//create common helper variables across all years
-gen iadl_helper_1 = f2582 if (core_year==1998)
-replace iadl_helper_1 = g2880 if (core_year==2000)
-replace iadl_helper_1 = hg054_1 if (core_year==2002)
-replace iadl_helper_1 = jg054_1 if (core_year==2004)
-la var iadl_helper_1 "IADL Helper 1 PN"
-
-gen iadl_helper_2 = f2591 if (core_year==1998)
-replace iadl_helper_2 = g2889 if (core_year==2000)
-replace iadl_helper_2 = hg054_2 if (core_year==2002)
-replace iadl_helper_2 = jg054_2 if (core_year==2004)
-la var iadl_helper_2 "IADL Helper 2 PN"
-
-gen iadl_helper_3 = f2596 if (core_year==1998)
-replace iadl_helper_3 = g2894 if (core_year==2000)
-replace iadl_helper_3 = hg032_3 if (core_year==2002)
-replace iadl_helper_3 = jg032_3 if (core_year==2004)
-la var iadl_helper_3 "IADL Helper 3 PN"
-
-gen iadl_helper_4 = f2602 if (core_year==1998)
-replace iadl_helper_4 = g2900 if (core_year==2000)
-replace iadl_helper_4 = hg054_4 if (core_year==2002)
-replace iadl_helper_4 = jg054_4 if (core_year==2004)
-la var iadl_helper_4 "IADL Helper 4 PN"
-
-gen iadl_helper_5 = f2608 if (core_year==1998)
-replace iadl_helper_5 = g2906 if (core_year==2000)
-replace iadl_helper_5 = hg054_5 if (core_year==2002)
-replace iadl_helper_5 = jg054_5 if (core_year==2004)
-la var iadl_helper_5 "IADL Helper 5 PN"
-
-gen iadl_helper_6 = f2614 if (core_year==1998)
-replace iadl_helper_6 = g2912 if (core_year==2000)
-replace iadl_helper_6 = hg054_6 if (core_year==2002)
-replace iadl_helper_6 = jg054_6 if (core_year==2004)
-la var iadl_helper_6 "IADL Helper 6 PN"
 **********************************************************************************
-*/
+**********************************************************************************
 **home care questions directly from surveys
 use help_r_allwaves2.dta, clear
 tab g2634, missing //home health care services
@@ -931,8 +726,9 @@ rename core_year year
 destring hhidpn, replace
 save home_care_to_merge.dta, replace
 
-use hrs_wproxycog.dta, clear
+use pdem_help_fullds_allwaves.dta, clear
 sort hhidpn year
+drop _merge
 merge 1:1 hhidpn year using home_care_to_merge.dta
 keep if _merge==3
 

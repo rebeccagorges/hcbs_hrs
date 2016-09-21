@@ -20,7 +20,7 @@ use pdem_fullds_allwaves.dta, clear
 *****************************************************************************
 pwcorr pdem prob_hurd
 *1 obs missing my calcualted value but not hurd value
-sum prob_hurd if missing(pdem) & year>1996 & year<2008 & ragey_e>69
+sum prob_hurd if missing(pdem) & year>1996 & year<2008 & ragey_e>69 
 *505 have my calculated value but not hurd
 sum pdem if missing(prob_hurd) & year>1996 & year<2008  & ragey_e>69
 
@@ -45,10 +45,13 @@ local regvars  rdates rbwc20 rser7 rscis rcact rpres rimrc rdlrc ///
 ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
 ch_rimrc ch_rdlrc nocogprev
 
-local proxyvars iqmean /*ch_iqmean*/ miss_chiqmean ///
+local proxyvars iqmean /*ch_iqmean*/ missiqscore  ///
 prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc
 
 **self interviews
+**hurd includes the 1 observation with missing tics variables, not sure
+**how to incoprorate this though because none of the obs in the ADAMS are missing
+**the tics score variables.
 foreach v in `bothvars' `regvars'{
 tab `v' dem_prob_calc_ind if rproxy==0 & ragey_e>69, missing
 }
@@ -58,9 +61,66 @@ gen miss_chiqmean=1 if missing(ch_iqmean)
 replace miss_chiqmean=0 if !missing(ch_iqmean)
 
 **proxy interviews
-foreach v in `bothvars' `proxyvars'{
+foreach v in `bothvars' `proxyvars' miss_chiqmean {
 tab `v' dem_prob_calc_ind if rproxy==1 & ragey_e>69, missing
 }
+
+//Hurd must be different in the missing score variables for proxy interview model
+tab missiqscore dem_prob_calc_ind if rproxy==1
+
+tab year if cog_missing==1 &rproxy==1
+
+*****************************************************************************
+**Hurd paper, table 1, probability of dementia by study characteristics
+/*gen r_white=1 if r_race_eth_cat==0
+replace r_white=0 if inlist(r_race_eth_cat,1,2,3)
+gen r_hisp=1 if  r_race_eth_cat==2
+replace r_hisp=0 if inlist(r_race_eth_cat,0,1,3)
+gen r_other=1 if  inlist(r_race_eth_cat,1,3)
+replace r_other=0 if inlist(r_race_eth_cat,0,2)
+
+foreach v in r_white r_hisp r_other{
+tab r_race_eth_cat `v',missing
+} 
+
+mat t1re=J(4,4,.)
+tab r_white if !missing(pdem),matcell(re1)
+mat t1re[1,1]=re1[2,1]/r(N)*100
+
+reg pdem r_white
+mat beta=e(b)
+mat t1re[1,2]=beta[1,1]+beta[1,2]
+
+
+
+mat list t1re
+
+reg r_race_eth_cat1 pdem
+reg pdem r_race_eth_cat1 
+
+gen r_male_ind=1 if r_female_ind==0
+replace r_male_ind=0 if r_female_ind==1
+reg pdem r_female_ind
+reg pdem r_male_ind
+
+sort r_female_ind
+by r_female_ind: sum pdem
+
+mat re=J(4,4,.)
+**race,ethnicity
+tab r_race_eth_cat if !missing(pdem), matcell(re1)
+forvalues i=1/4{
+mat re[`i',1]=re1[`i',1]/r(N)*100
+sum pdem if r_race_eth_cat==`i'-1
+mat re[`i',2]=r(mean)
+mat re[`i',3]=r(mean)-(1.96*r(sd))
+mat re[`i',4]=r(mean)+(1.96*r(sd))
+}
+
+mat list re
+
+ 
+*/
 *****************************************************************************
 **appendix text beginning page 8 tabulations
 tab pred_dem_cat if predsample==1
@@ -270,13 +330,13 @@ la val dx_adams_waveC2  dem_cat2
 **table s6
 mat s5=J(3,3,.)
 forvalues r=1/3{
-		sum pnorm if dx_adams_waveC2==`r'
+		sum pnorm_followup if dx_adams_waveC2==`r'
 		mat s5[`r',1]=r(mean)*100	
 		
-		sum pcind if dx_adams_waveC2==`r'
+		sum pcind_followup if dx_adams_waveC2==`r'
 		mat s5[`r',2]=r(mean)*100
 
-		sum pdem if dx_adams_waveC2==`r'
+		sum pdem_followup if dx_adams_waveC2==`r'
 		mat s5[`r',3]=r(mean)*100
 		
 	}
@@ -287,11 +347,11 @@ frmttable , statmat(s5) sdec(1) store(s5_1)
 
 **summary last row
 mat s5_1=J(1,3,.)
-sum pnorm
+sum pnorm_followup
 mat s5_1[1,1]=r(mean)*100
-sum pcind
+sum pcind_followup
 mat s5_1[1,2]=r(mean)*100
-sum pdem
+sum pdem_followup
 mat s5_1[1,3]=r(mean)*100
 
 mat list s5_1
@@ -303,7 +363,7 @@ ctitles("","predicted","predicted","predicted" \ ///
 "Wave C status","Normal","CIND","Demented") ///
 rtitles("Normal" \ "CIND" \ "Demented" \ "Total") ///
 note("Interpretation: Of those with normal diagnosis in ADAMS wave C," ///
-"the average predicted probability of dementia is 72.9%")
+"the average predicted probability of normal status is 66.8%")
 *****************************************************************************
 **text on page 10 tabulations (documented in Word document)
 tab dx_adams_waveC
