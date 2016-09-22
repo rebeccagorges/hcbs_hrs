@@ -220,6 +220,67 @@ title("Replication Hurd table appendix p 9, within ADAMS sample fit") ///
 ctitles("bin","n","Fitted ","Actual ", "Estimated","Actual" \ ///
 "","","probability","frequency","number of cases","number of cases") ///
 addtable
+
+*****************************************************************************
+**tables s2 and S3
+*****************************************************************************
+**copied from the impute_dementia_probability.do file, if change variables
+**or anything else about the model there, need to update here as well!!
+la var age_cat2_ind3 "Age 75-79"
+la var age_cat2_ind4 "80-84"
+la var age_cat2_ind5 "85-89"
+la var age_cat2_ind6 "90+"
+la var ed_hs_only "HS graduate (includes GED)"
+la var ed_gt_hs "More than HS"
+la var r_female_ind "Female"
+la var radla "ADL limitations"
+la var riadlza "IADL limitations"
+la var ch_radla "Change in ADL limitations"
+la var ch_riadlza "Change in IADL limitations"
+la var missradla "Missing change in ADL limitations"
+la var ch_rdates "Change in dates" 
+la var ch_rbwc20 "Change in Backward counting"
+la var ch_rser7 "Change in Serial 7"
+la var ch_rscis "Change in Scissor"
+la var ch_rcact "Change in Cactus"
+la var ch_rpres "Change in President" 
+la var ch_rimrc "Change in immediate recall"
+la var ch_rdlrc "Change in Delayed recall" 
+la var nocogprev "Missing cog questions prev interview" 
+
+la var iqmean "Jorm IQ code"
+la var missiqscore "Missing IQ code" 
+la var ch_iqmean "Change in IQ code"
+la var prevrproxy "Proxy interview t-2 HRS" 
+la var prevrdates "Dates 2 waves prior"
+la var prevrser7 "Serial 7 2 waves prior"
+la var prevrpres "President 2 waves prior" 
+la var prevrimrc "Immediate recall 2 waves prior"
+la var prevrdlrc "Delayed recall 2 waves prior" 
+
+local bothvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ///
+ed_hs_only ed_gt_hs r_female_ind radla riadlza ch_radla ch_riadlza missradla missriadlza
+
+local regvars rdates rbwc20 rser7 rscis rcact rpres rimrc rdlrc ///
+ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
+ch_rimrc ch_rdlrc nocogprev 
+
+local proxyvars iqmean missiqscore ch_iqmean ///
+prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc 
+
+oprobit dx `bothvars' `regvars' if rproxy==0 //version 2
+
+outreg using `logpath'/pdem_check_tables, ///
+title("Replication Hurd table S2, self interviews oprobit model") ///
+ctitles("","","Coefficient" "Std Error") ///
+varlabels se nosubstat summstat(N)  addtable 
+
+oprobit dx `bothvars' `proxyvars' if rproxy==1 //version 2
+outreg using `logpath'/pdem_check_tables, ///
+title("Replication Hurd table S3, proxy interviews oprobit model") ///
+ctitles("","","Coefficient" "Std Error") ///
+varlabels se nosubstat summstat(N) addtable 
+
 *****************************************************************************
 **table s5
 *****************************************************************************
@@ -342,7 +403,7 @@ forvalues r=1/3{
 	}
 
 
-mat list s5
+mat list s5 
 frmttable , statmat(s5) sdec(1) store(s5_1)
 
 **summary last row

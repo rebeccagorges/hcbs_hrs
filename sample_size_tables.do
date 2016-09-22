@@ -115,7 +115,7 @@ mat tab1_2=J(1,6,.)
 foreach var in sr_mem_dis_any rcogimp_tics_ind ///
    tics_ltp10 tics_ltp25 tics_ltp50 tics_missing ///
     iqmean_gtco iqmean_gtp90 iqmean_gtp75 iqmean_gtp50 iqcode_missing ///
-   pred_dem_ind {
+   pred_dem_cat1 pred_dem_cat2 {
 	tab `var', missing matcell(sr)
 	mat tab1_2[1,1]=sr[2,1]
 	mat tab1_2[1,2]=sr[2,1]/r(N)*100
@@ -211,7 +211,6 @@ tab help_paid_comb_ind, missing //question from helper file
 tab help_prof_comb, missing //relationship to helper from helper file
 
 **additional variables for combinations of hc questions
-
 gen hc_any=0
 replace hc_any=1 if sr_homecare_ind==1 | home_care_other_svc_ind==1 | help_paid_comb_ind==1 | help_prof_comb==1
 la var hc_any "Home care, any of 4 variables"
@@ -228,24 +227,34 @@ mat t2b[`r',1]=c1[2,1] //overall n
 
 tab sr_nh_ind if `v'==1, matcell(c2)
 mat t2b[`r',2]=c2[2,1] //n with nh=yes
-mat t2b[`r',3]=c2[1,1] //n with nh=no
+mat t2b[`r',3]=c2[2,1]/r(N)*100 //%
 
-tab pred_dem_ind if `v'==1, matcell(c2)
+tab pred_dem_cat1 if `v'==1, matcell(c2)
 mat t2b[`r',4]=c2[2,1] //n with dementia=yes
-mat t2b[`r',5]=c2[1,1] //n with dementia=no
+mat t2b[`r',5]=c2[2,1]/r(N)*100 //%
 
 mat rownames t2b=`v'  
 
-frmttable, statmat(t2b) store(tab2b_1) varlabels sdec(0)
+frmttable, statmat(t2b) store(tab2b_1) varlabels sdec(0,0,2,0,2)
 outreg, replay(tab2b_2) append(tab2b_1) store(tab2b_2)
  }
 
 outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab2b_2) ///
 title("Table 2B - Home care variables comparison" ) ///
-ctitles("","overall","Nursing home","No nursing home","Pred dementia","No pred dementia") ///
+ctitles("","overall","Nursing home n","%","Pred dementia n","%") ///
 note("HRS 1998-2012 waves, age 70+") ///
  addtable
+
+***********************
+**Venn diagram
+***********************
+**combine two adl/iadl variables
+gen help_adl_prof_or_paid=1 if help_paid_comb_ind==1 | help_prof_comb==1
+replace  help_adl_prof_or_paid=0 if help_paid_comb_ind==0 & help_prof_comb==0
+
+VennDiagram sr_homecare_ind home_care_other_svc_ind help_adl_prof_or_paid
+graph export `logpath'\home_care_vars_venn.pdf, as(pdf) replace
 
 *********************************************************************
 **create table 3 Care setting x Dementia
@@ -314,7 +323,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 **split by categories
 mat tab3=J(1,7,.)
 foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
-   pred_dem_ind rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat if `var'==1, missing matcell(t3)
 	
@@ -345,6 +354,7 @@ outreg, clear
 *************************************************************************************
 **do again with broader home care definition including other services (not medical)
 **this is sloppy, fix it later!
+preserve
 drop if inlist(r_sr_ltc_cat2,0,.)
 tab r_sr_ltc_cat2
 local n=r(N)
@@ -407,7 +417,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 **split by categories
 mat tab3=J(1,7,.)
 foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
-   pred_dem_ind rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat2 if `var'==1, missing matcell(t3)
 	
@@ -433,5 +443,106 @@ note("HRS 1998-2012 waves, age 70+, report nursing home and/or home care use") /
 ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
 "","","n","%","n","%","n","%") ///
 landscape addtable
+
+restore
+outreg, clear
+*************************************************************************************
+**finally definition any of the 4 questions 
+**this is sloppy, fix it later!
+gen r_sr_ltc_cat3=0 if sr_nh_ind==0 & hc_any==0
+replace r_sr_ltc_cat3=1 if sr_nh_ind==1 & hc_any==0
+replace r_sr_ltc_cat3=2 if sr_nh_ind==0 & hc_any==1
+replace r_sr_ltc_cat3=3 if sr_nh_ind==1 & hc_any==1
+
+drop if inlist(r_sr_ltc_cat3,0,.)
+tab r_sr_ltc_cat3
+local n=r(N)
+
+**indicators for race-ethnicity categories
+tab r_race_eth_cat, gen(race_ind)
+la var race_ind1 "White"
+la var race_ind2 "Black"
+la var race_ind3 "Hispanic"
+la var race_ind4 "Other"
+
+**indicator for non-medicaid
+tab rmedicaid_sr, gen(mdcaid)
+la var mdcaid1 "R No Medicaid, self report"
+
+**indicator for income < 25% of sample income
+sum hitot, detail
+sca inc25co=r(p25)
+gen incomeltp25 = 1 if hitot<=inc25co & !missing(hitot)
+replace incomeltp25 = 0 if hitot>inc25co & !missing(hitot)
+tab incomeltp25, missing
+la var incomeltp25 "Income <25 percentile (annual < $13200)"
+
+tab incomeltp25, gen(incomeltp25)
+la var incomeltp251 "Income >25 percentile"
+
+**cognition variables, using both proxy and self interviews
+gen cog_comb=1 if rcogimp_tics_ind==1 | iqmean_gtco==1
+replace cog_comb=0 if (rcogimp_tics_ind==0 & rproxy==0) | (iqmean_gtco==0 & rproxy==1)
+la var cog_comb "TICS score <8 or IQMEAN>3.38"
+
+tab cog_comb rproxy, missing
+
+gen cog_comb1=1 if tics_ltp10==1 | iqmean_gtp90==1
+replace cog_comb1=0 if (tics_ltp10==0 & rproxy==0) | (iqmean_gtp90==0 & rproxy==1)
+la var cog_comb1 "TICS score 10% or IQMEAN>90%"
+
+gen cog_comb2=1 if tics_ltp25==1 | iqmean_gtp75==1
+replace cog_comb2=0 if (tics_ltp25==0 & rproxy==0) | (iqmean_gtp75==0 & rproxy==1)
+la var cog_comb2 "TICS score<25% or IQMEAN>75%"
+
+gen cog_comb3=1 if tics_ltp50==1 | iqmean_gtp50==1
+replace cog_comb3=0 if (tics_ltp50==0 & rproxy==0) | (iqmean_gtp50==0 & rproxy==1)
+la var cog_comb3 "TICS score<50% or IQMEAN>50%"
+
+mat tab3=J(1,7,.)
+
+tab r_sr_ltc_cat3, missing matcell(t3)
+local n=r(N)
+local c=2
+
+forvalues i=1/3 {
+mat tab3[1,`c']=t3[`i',1]
+mat tab3[1,`c'+1]=t3[`i',1]/r(N)*100
+local c = `c'+2
+}
+mat rowname tab3="Overall sample n"
+frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
+
+**split by categories
+mat tab3=J(1,7,.)
+foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+   pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
+   race_ind1 race_ind2 race_ind3 race_ind4{
+	tab r_sr_ltc_cat3 if `var'==1, missing matcell(t3)
+	
+	mat tab3[1,1]=r(N)
+	
+	local c = 2
+	forvalues i=1/3 {
+		mat tab3[1,`c']=t3[`i',1]
+		mat tab3[1,`c'+1]=t3[`i',1]/r(N)*100
+		local c = `c'+2
+		}
+	mat rowname tab3=`var'
+
+	frmttable, statmat(tab3) store(tab3) sdec(0,0,2,0,2,0,2) varlabels
+
+	outreg, replay(tab3b_1) append(tab3) store(tab3b_1)
+}
+
+outreg using `logpath'\sample_tables_aug2016.doc, ///
+replay(tab3_a) append(tab3b_1) title("Table 3B - LTC split by dementia, medicaid, race, n=`n'" \ ///
+"Home care includes medical care, special services, and professional or paid help with ADL/IADLs" ) ///
+note("HRS 1998-2012 waves, age 70+, report nursing home and/or home care use") ///
+ctitles("", "N" "NH only","","Home care","","NH+Home care" \ ///
+"","","n","%","n","%","n","%") ///
+landscape addtable
+
+
 
 log close

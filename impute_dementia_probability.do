@@ -178,7 +178,7 @@ la var dx "ADAMS final diagnosis"
 /*Version 1 code, from ebl
 note-most missing variables excluded due to collinearity
 this section original version from ebl with variable names updated*/
-local regvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ed_hs_only ed_gt_hs r_female_ind ///
+/*local regvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ed_hs_only ed_gt_hs r_female_ind ///
 radla riadlza ch_radla ch_riadlza rdates rbwc20 ///
 rser7 rscis rcact rpres rimrc rdlrc ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
 ch_rimrc ch_rdlrc missrbwc20 missrser7 missrscis missrcact missrpres missrimrc ///
@@ -189,7 +189,7 @@ radla riadlza ch_radla ch_riadlza  iqmean ch_iqmean ///
 ch_rproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc ///
 missrdates missrser7 missrscis missrcact missrpres missrimrc ///
 missrdlrc missradla missriadlza
-
+*/
 /*version 2 code
 Updated from version 1 to include alternate missing categorical variables
 1. noprevivw=no t-2 HRS interview, change scores set to 0
@@ -208,7 +208,7 @@ ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
 ch_rimrc ch_rdlrc nocogprev 
 
 local proxyvars iqmean missiqscore ch_iqmean ///
-prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc ///
+prevrproxy prevrdates prevrser7 prevrpres prevrimrc prevrdlrc 
 
 replace iqmean=3 if missing(iqmean) & rproxy==1 //so don't drop those that have missing scores, just have addl ind
 
