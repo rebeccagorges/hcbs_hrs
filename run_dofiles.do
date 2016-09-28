@@ -25,5 +25,8 @@ do `dofiles'/impute_dementia_checks.do
 **home care variables created from raw interview questions,helper files
 do `dofiles'/home_care.do
 
+**variable cleaning prior to sample size checks
+do `dofiles'/coding_variables2.do
+
 **first pass at sample sizes - preliminary
 do `dofiles'/sample_size_tables.do
