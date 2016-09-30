@@ -115,6 +115,46 @@ gen cog_comb3=1 if tics_ltp50==1 | iqmean_gtp50==1
 replace cog_comb3=0 if (tics_ltp50==0 & rproxy==0) | (iqmean_gtp50==0 & rproxy==1)
 la var cog_comb3 "TICS score<50% or IQMEAN>50%"
 
+**************************************************************************
+**dementia indicators - using all 3 measures
+**first version, missing if missing any of the three measures
+gen dem_vars_cat=0 if sr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==0
+replace dem_vars_cat=1 if sr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==0
+replace dem_vars_cat=2 if sr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==0
+replace dem_vars_cat=3 if sr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==1
+replace dem_vars_cat=4 if sr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==0
+replace dem_vars_cat=5 if sr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==1
+replace dem_vars_cat=6 if sr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==1
+replace dem_vars_cat=7 if sr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==1
+
+la def dem_vars_cat 0 "No dementia" 1 "SR mem disease only" ///
+2 "Predicted dementia only" 3 "Cog score only" ///
+4 "SR mem disease + pred dementia" 5 "SR mem disease + Cog score" ///
+6 "Pred dem + Cog score" 7 "SR mem disease+Pred dem+Cog score" ///
+
+la val dem_vars_cat dem_vars_cat
+la var dem_vars_cat "Dementia classification, variables comparison, version 1"
+
+tab dem_vars_cat, missing
+
+**second version, assigning to dementia ignoring missing
+gen dem_vars_cat2=dem_vars_cat
+replace dem_vars_cat2=1 if sr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & inlist(cog_comb,0,.)
+replace dem_vars_cat2=2 if inlist(sr_mem_dis_any,0,.) & pred_dem_cat1==1 & inlist(cog_comb,0,.)
+replace dem_vars_cat2=3 if inlist(sr_mem_dis_any,0,.) & inlist(pred_dem_cat1,0,.) & cog_comb==1
+replace dem_vars_cat2=4 if sr_mem_dis_any==1 & pred_dem_cat1==1 & inlist(cog_comb,0,.)
+replace dem_vars_cat2=5 if sr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & cog_comb==1
+replace dem_vars_cat2=6 if inlist(sr_mem_dis_any,0,.) & pred_dem_cat1==1 & cog_comb==1
+la val dem_vars_cat2 dem_vars_cat
+
+tab dem_vars_cat2, missing
+
+**indicator for any dementia indicator
+gen dem_any_vars_ind=0 if dem_vars_cat2==0
+replace dem_any_vars_ind=1 if dem_vars_cat2>0 & !missing(dem_vars_cat2)
+la var dem_any_vars_ind "Dementia indicator, sr mem disease or cog score or pred dem"
+tab dem_vars_cat2 dem_any_vars_ind, missing
+
 ****************************************************************
 **Long term care / home care categorizations with different variables
 ****************************************************************

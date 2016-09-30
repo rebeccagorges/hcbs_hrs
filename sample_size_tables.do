@@ -35,6 +35,8 @@ drop if wave==3
 tab pred_dem_cat1 age_lt_70, missing
 drop if age_lt_70==1
 
+tab dem_vars_cat2 dem_any_vars_ind, missing
+
 *********************************************************************
 **create table 1 Dementia status 
 *********************************************************************
@@ -53,7 +55,7 @@ mat tab1_2=J(1,6,.)
 foreach var in sr_mem_dis_any rcogimp_tics_ind ///
    tics_ltp10 tics_ltp25 tics_ltp50 tics_missing ///
     iqmean_gtco iqmean_gtp90 iqmean_gtp75 iqmean_gtp50 iqcode_missing ///
-   pred_dem_cat1 pred_dem_cat2 {
+   pred_dem_cat1 pred_dem_cat2 dem_any_vars_ind {
 	tab `var', missing matcell(sr)
 	mat tab1_2[1,1]=sr[2,1]
 	mat tab1_2[1,2]=sr[2,1]/r(N)*100
@@ -231,7 +233,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab3=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat if `var'==1 & ltc_ind1==1, matcell(t3)
@@ -278,7 +280,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab3=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat2 if `var'==1 & ltc_ind2==1, matcell(t3)
@@ -326,7 +328,7 @@ frmttable, statmat(tab3) store(tab3_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab3=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2 rmedicaid_sr mdcaid1 incomeltp25 incomeltp251 ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat3 if `var'==1 & ltc_ind3==1, missing matcell(t3)
@@ -380,7 +382,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat if `var'==1 & ltc_ind1==1 & rmedicaid_sr==1, missing matcell(t4)
@@ -429,7 +431,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat2 if `var'==1 & ltc_ind2==1 & rmedicaid_sr==1, missing matcell(t4)
@@ -478,7 +480,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat3 if `var'==1 & ltc_ind3==1 & rmedicaid_sr==1, missing matcell(t4)
@@ -528,7 +530,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat if `var'==1 & ltc_ind1==1 & incomeltp25==1, missing matcell(t4)
@@ -577,7 +579,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat2 if `var'==1 & ltc_ind2==1 & incomeltp25==1, missing matcell(t4)
@@ -626,7 +628,7 @@ frmttable, statmat(tab4) store(tab4_a) sdec(0,0,2,0,2,0,2)
 
 **split by categories
 mat tab4=J(1,7,.)
-foreach var in sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
+foreach var in dem_any_vars_ind sr_mem_dis_any cog_comb cog_comb1 cog_comb2 cog_comb3 ///
    pred_dem_cat1 pred_dem_cat2  ///
    race_ind1 race_ind2 race_ind3 race_ind4{
 	tab r_sr_ltc_cat3 if `var'==1 & ltc_ind3==1 & incomeltp25==1, missing matcell(t4)
