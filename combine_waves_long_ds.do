@@ -21,7 +21,8 @@ cd `data'
 **save dataset with just needed variables, get cognition variables from HRS xwave file
 use `data'\public_raw\rndhrs_o.dta, clear
 
-keep *hhidpn *hhid pn inw* *iwstat *shlt *hlthlm *depres *effort *sleepr *whappy *flone *fsad *going *enlife ///
+keep *hhidpn *hhid pn inw* *iwstat *cendiv *shlt *hlthlm *depres *effort ///
+ *sleepr *whappy *flone *fsad *going *enlife ///
  *cesd *cesdm *walkr *walkrh *walkre *dress *dressh *bath *bathh *eat *eath ///
 *bed *bedh *bede *toilt *toilth *walkra *dressa *batha *eata *beda *toilta ///
 *adla *adlwa *map *phone *money *meds *shop *meals *mapa *phonea *moneya ///
@@ -51,7 +52,8 @@ forvalues i=3/11{
 use rand_trunc.dta, clear
 
 **keep only specific wave variables
-keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'shlt *`i'hlthlm *`i'depres *`i'effort ///
+keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'cendiv ///
+ *`i'shlt *`i'hlthlm *`i'depres *`i'effort ///
 *`i'sleepr *`i'whappy *`i'flone *`i'fsad *`i'going *`i'enlife ///
  *`i'cesd *`i'cesdm *`i'walkr *`i'walkrh *`i'walkre *`i'dress *`i'dressh ///
  *`i'bath *`i'bathh *`i'eat *`i'eath *`i'bed *`i'bedh *`i'bede *`i'toilt ///
@@ -83,7 +85,7 @@ drop if inw`i'==0
 drop inw`i'
 
 **rename variables that are both r/s variables
-local rsvars iwstat shlt hlthlm depres effort sleepr whappy flone fsad going enlife ///
+local rsvars iwstat cendiv shlt hlthlm depres effort sleepr whappy flone fsad going enlife ///
  cesd cesdm walkr walkrh walkre dress dressh bath bathh eat eath ///
  bed bedh bede toilt toilth walkra dressa batha eata beda toilta ///
 adla adlwa map phone money meds shop meals mapa phonea moneya ///

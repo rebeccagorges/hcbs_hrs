@@ -19,7 +19,7 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **long ds with waves 4-11 from RAND with variables coded
-use hrs_sample2.dta, clear
+use hrs_sample3.dta, clear
 
 tab year, missing
 

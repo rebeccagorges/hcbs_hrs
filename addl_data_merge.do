@@ -64,12 +64,8 @@ foreach name in `hhvars' {
 save rand_fam_w`i'.dta, replace
 }
 
+*************************************************************
 **merge waves 3-10 into the Rand main, long dataset
-
-*************************************************************
-** Something is wrong with this merge, resulting ds missing values after wave 3!!! 
-*************************************************************
-
 *************************************************************
 
 use rand_waves3to11.dta, clear

@@ -5,7 +5,7 @@ local dofiles C:\Users\Rebecca\Documents\GitHub\hcbs_hrs
 
 **keep only required variables from RAND ds, set up as long data format 
 **(each r has multiple rows, one for each wave)
-do `dofiles'/combine_waves_long_ds.do
+//do `dofiles'/combine_waves_long_ds.do
 
 **add data from Rand family file, probability of dementia
 do `dofiles'/addl_data_merge.do
@@ -25,8 +25,14 @@ do `dofiles'/impute_dementia_checks.do
 **home care variables created from raw interview questions,helper files
 do `dofiles'/home_care.do
 
+**bring in state level data
+do `dofiles'/geo_data_merge.do
+
 **variable cleaning prior to sample size checks
 do `dofiles'/coding_variables2.do
 
 **first pass at sample sizes - preliminary
 do `dofiles'/sample_size_tables.do
+
+**exploring iv's
+do `dofiles'/iv_work.do

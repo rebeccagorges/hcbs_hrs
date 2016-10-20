@@ -15,7 +15,7 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 
 cd `data'
 **long ds with waves 4-11 from RAND with variables coded
-use hrs_sample.dta, clear
+use hrs_sample2.dta, clear
 ****************************************************************
 tab year, missing
 
@@ -222,6 +222,6 @@ la var incomeltp25 "Income <25 percentile (annual < $14300)"
 tab incomeltp25, gen(incomeltp25)
 la var incomeltp251 "Income >25 percentile"
 ****************************************************************
-save hrs_sample2.dta, replace
+save hrs_sample3.dta, replace
 
 log close
