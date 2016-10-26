@@ -1,5 +1,5 @@
 **Rebecca Gorges
-**August 2016
+**October 2016
 **Uses hrs_waves3to11_vars.dta
 **Creates tabulations for initial sample size estimates
 **Limits dataset to 1998-2012 waves, age 70+
@@ -31,6 +31,66 @@ tab year, missing
 tab pred_dem_cat1 wave, missing
 drop if wave==3
 
+*********************************************************************
+**Summary of panel gender-race char before dropping anyone
+**drop age <65
+//drop if age_lt_65==1
+
+preserve
+sort hhidpn year
+by hhidpn: gen n=_n
+keep if n==1
+**race/eth table by gender
+tab r_female_ind, missing
+
+mat re_table=J(1,5,.)
+foreach r in 2 1 3 { //order is black, white, other
+tab r_female_ind if raracem==`r' & rahispan==0, matcell(g)
+
+mat re_table[1,1]=g[2,1]
+mat re_table[1,2]=g[1,1]
+
+tab r_female_ind if raracem==`r' & rahispan==1, matcell(g)
+
+mat re_table[1,3]=g[2,1]
+mat re_table[1,4]=g[1,1]
+mat re_table[1,5]= re_table[1,1] + re_table[1,2] + re_table[1,3] + re_table[1,4]
+
+mat list re_table
+
+frmttable , statmat(re_table) store(re_tab1) ///
+ctitles( "","Non hispanic","","Hispanic","","" \ ///
+ "","Female","Male","Female","Male","Total" ) ///
+rtitles("`r'")  sdec(0)
+
+outreg, replay(re_tab2) append(re_tab1) store(re_tab2)
+}
+
+**get totals row
+tab r_female_ind if !missing(raracem) & rahispan==0, matcell(g)
+mat re_table[1,1]=g[2,1]
+mat re_table[1,2]=g[1,1]
+
+tab r_female_ind if !missing(raracem) & rahispan==1, matcell(g)
+mat re_table[1,3]=g[2,1]
+mat re_table[1,4]=g[1,1]
+mat re_table[1,5]= re_table[1,1] + re_table[1,2] + re_table[1,3] + re_table[1,4]
+
+frmttable , statmat(re_table) store(re_tab1) ///
+ctitles("", "Non hispanic","","Hispanic","","" \ ///
+"","Female","Male","Female","Male","Total" ) ///
+ sdec(0)
+ 
+**output the table
+outreg, replay(re_tab2) append(re_tab1) store(re_tab2)
+
+outreg using `logpath'\sample_tables_aug2016.doc, replay(re_tab2) ///
+title("Planned enrollment report, 2000-2012 HRS Panel") ///
+rtitles("Black" \ "White" \ "Other" \ "Totals") replace
+
+restore
+
+*******************************************************************
 **age <70 dropped
 tab pred_dem_cat1 age_lt_70, missing
 drop if age_lt_70==1
@@ -79,7 +139,7 @@ outreg using `logpath'\sample_tables_aug2016.doc, ///
 replay(tab1_a) append(tab1_3) title("Table 1 - dementia classification") ///
 note("HRS 1998-2012 waves, age 70+") ///
 ctitles("Method", "Overall sample","","Self interview","","Proxy interview" \ ///
-"","n","%","n","%","n","%") landscape replace
+"","n","%","n","%","n","%") landscape addtable
 
 
 **********************************

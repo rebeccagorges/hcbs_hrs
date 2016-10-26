@@ -44,6 +44,7 @@ keep hhidpn shhidpn year wave state totpop ptotf ptotm p65m p65f p85m p85f ///
  nhbed_st nhbed_us
 
 save geo_to_merge.dta, replace 
+
 */
 **********************************************************
 /*import excel using `data'/misc_other_raw/HCBS_Waivers_all.xlsx, ///
@@ -153,15 +154,33 @@ forvalues c = 1/30{
 bys state year wvrnum: egen svc_code_`c'_a= max( svc_code_`c' )
 }
 
-**now one observation per each waiver id
+**now one observation per each year-waiver id
 bys state year wvrnum: gen n=_n
 keep if n==1
 drop n
 
+//get count of new waivers from 2000-2012
+preserve
+sort state wvrnum begdate2
+bys state  wvrnum: gen n=_n
+keep if n==1 //keep first year of each waiver
+keep if begdate2>=td(1jan2000) & begdate2<td(1jan2013)
+egen n_new_waivers=total(n)
+sum n_new_waivers
+
+sort state wvrnum
+bys state: gen n2=_n
+bys state: gen nowaivers=_N
+
+keep if n2==1
 *count of waivers by state
+sum nowaivers
+restore 
+
 bys state year : gen wvr_count_sy= _N
 bys state year : gen n= _n
 
+*get totals by state-year of service codes, recipients, dollars
 forvalues c = 1/30{
 bys state year: egen svc_code_`c'_sy= max( svc_code_`c'_a )
 }
@@ -188,7 +207,7 @@ li state wvrnum year title if dup==15
 keep if n==1
 keep state year *_sy
 
-gen svc_code_count_sy=0
+gen svc_code_count_sy=0 //total number of service codes variable
 forvalues c = 1/30{
 replace svc_code_count_sy=svc_code_count_sy+svc_code_`c'_sy
 }
@@ -211,8 +230,93 @@ collapse svc_code_demsp,by(year)
 twoway scatter svc_code_demsp year 
 restore
 
+/*some notes re missingness
+AZ has no waivers in the spreadsheet, CMS website indicates 1st in late 2011
+DC has no waivers 1998
+CA, CT, HI , LA, MO, OK, OR, SD, UT no waivers in 2011
+ID, MA, MS, NV, TN, WV  have no waivers in 2012
+IA none 2011 and 2012
+PR not in spreadsheet
+RI no waivers 2010 and 2012
+VT none 2006 or later
+*/
+
+**perform imputations on cases where states are missing info in 2011/2012
+
+//need lead year variables
+sort state year
+by state: gen year_p1=year[_n+1]
+gen yeardiff=year-year_p1
+tab yeardiff, missing
+
+gen lastobs=1 if missing(yeardiff)
+replace lastobs=0 if !missing(yeardiff)
+
+li state year yeardiff if yeardiff<-1 & !missing(yeardiff)
+
+/*  li state year yeardiff if yeardiff<-1 & !missing(yeardiff)
+      +-------------------------+
+      | state   year   yeardiff |
+      |-------------------------|
+  17. |    AK   2010         -2 |
+  94. |    CA   2010         -2 |
+ 150. |    CT   2010         -2 |
+ 171. |    DC   2010         -2 |
+ 198. |    DE   2012         -3 |**new waiver numbers before/after, do not impute
+      |-------------------------|
+ 278. |    HI   2010         -2 |
+ 302. |    IA   2010         -3 |**same waiver no before/after, impute using prev year
+ 328. |    ID   2010         -3 |**same waiver no before/after, impute using prev year
+ 468. |    LA   2010         -2 |
+ 495. |    MA   2010         -4 |**same waiver no before/after, impute using prev year
+      |-------------------------|
+ 632. |    MO   2010         -2 |
+ 659. |    MS   2010         -3 |**same waiver no before/after, impute using prev year
+ 874. |    NV   2010         -3 |**same waiver no before/after, impute using prev year
+ 951. |    OK   2010         -2 |
+ 978. |    OR   2010         -2 |
+      |-------------------------|
+1079. |    SD   2010         -2 |
+1105. |    TN   2010         -3 |**same waiver no before/after, impute using prev year
+1160. |    UT   2010         -2 |
+1287. |    WV   2010         -5 |**same waiver no before/after, impute using prev year
+      +-------------------------+
+*/
+
+**when just one year skipped, just carry forward the earlier years waiver information
+**see above notes when >1 year skipped, case by case decisions
+gen impute_fl=0
+replace impute_fl=1 if yeardiff==-2
+replace impute_fl=1 if yeardiff<-2 & inlist(state,"IA","ID","MA","MS","NV","TN","WV")
+tab impute_fl, missing
+
+encode state, generate(state_num)
+tsset state_num year 
+tsfill 
+
+bysort state_num: carryforward state impute_fl, replace
+
+
+bysort state_num: carryforward wvr_count_sy svc_code_count_sy ///
+	svc_code_demsp reciptotall_sy dollartotall_sy if impute_fl==1, replace
+
+
+forvalues c=1/30{
+bysort state_num: carryforward svc_code_`c'_sy if impute_fl==1, replace
+}
+
+**fill in 0 if decided not to impute, just DE **2 obs
+foreach v in wvr_count_sy svc_code_count_sy svc_code_demsp reciptotall_sy dollartotall_sy {
+	replace `v'=0 if missing(`v') & impute_fl==0 
+}
+forvalues c=1/30{
+	replace svc_code_`c'_sy=0 if missing(svc_code_`c'_sy) & impute_fl==0
+}
+
 **save the dataset
 rename year riwendy  //update variable name to match merge dataset
+la var impute_fl "State waiver information imputed from prev year"
+drop yeardiff lastobs year_p1
 save hcbs_waivers_tomerge.dta, replace
 
 ***********************************************k***********
@@ -222,7 +326,7 @@ use hrs_sample.dta, clear
 drop _merge
 sort hhidpn year
 
-merge 1:1 hhidpn year using geo_to_merge.dta
+merge 1:1 hhidpn year using geo_to_merge.dta //bring in jd's dataset
 
 drop if _merge==2 //mostly years not in my main dataset 
 drop _merge
@@ -233,17 +337,13 @@ merge m:1 state riwendy using hcbs_waivers_tomerge.dta
 tab _merge
  
 tab state if _merge==1
-tab riwendy if _merge==1 & state=="IA"
+tab year if _merge==1 & state=="RI"
 
-/*some notes re missingness
-AZ has no waivers in the spreadsheet, CMS website indicates 1st in late 2011
-DC has no waivers 1998
-CA, CT, HI , LA, MO, OK, OR, SD, UT no waivers in 2011
-ID, MA, MS, NV, TN, WV  have no waivers in 2012
-IA none 2011 and 2012
-PR not in spreadsheet
-RI no waivers 2010 and 2012
-VT none 2006 or later
+/* notes re missing state-years
+AZ had no waivers
+DC first waiver in 1999
+RI last waiver in 2009
+VT last waiver in 2005
 */
 
 **fill in missing values to 0

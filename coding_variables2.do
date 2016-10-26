@@ -210,14 +210,33 @@ la var race_ind4 "Other"
 tab rmedicaid_sr, gen(mdcaid)
 la var mdcaid1 "R No Medicaid, self report"
 
-
 **indicator for income < 25% of sample income (sample is 70+/1998+)
-sum hitot if sample_criteria==1, detail
-sca inc25co=r(p25)
-gen incomeltp25 = 1 if hitot<=inc25co & !missing(hitot) & sample_criteria==1
-replace incomeltp25 = 0 if hitot>inc25co & !missing(hitot) & sample_criteria==1
-tab incomeltp25, missing
-la var incomeltp25 "Income <25 percentile (annual < $14300)"
+**first income and assets for inflation so all 2012$
+**use the average CPI (overall CIP) for the year
+foreach v in hitot hatota{
+gen `v'_ia=`v'*1.41 if year==1998
+replace `v'_ia=`v'*1.33 if year==2000
+replace `v'_ia=`v'*1.28 if year==2002
+replace `v'_ia=`v'*1.22 if year==2004
+replace `v'_ia=`v'*1.14 if year==2006
+replace `v'_ia=`v'*1.07 if year==2008
+replace `v'_ia=`v'*1.05 if year==2010
+replace `v'_ia=`v' if year==2012
+}
+
+**indicator for bottom 25% for income and assets
+foreach v in hitot_ia hatota_ia{
+sum `v' if sample_criteria==1, detail
+sca `v'25co=r(p25)
+gen `v'_ltp25 = 1 if `v'<=`v'25co & !missing(`v') & sample_criteria==1
+replace `v'_ltp25 = 0 if `v'>`v'25co & !missing(`v') & sample_criteria==1
+tab `v'_ltp25, missing
+}
+rename hitot_ia_ltp25 incomeltp25
+rename hatota_ia_ltp25 assetsltp25
+
+la var incomeltp25 "HH Income <25 percentile (annual < $16,821)" 
+la var assetsltp25 "HH Assets <25 percentile ( < $46,848)"
 
 tab incomeltp25, gen(incomeltp25)
 la var incomeltp251 "Income >25 percentile"
