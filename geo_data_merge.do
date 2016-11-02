@@ -16,11 +16,14 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **********************************************************
-/*
+
 **open original file from Jing
 local jdpath "C:\Users\Rebecca\Documents\UofC\research\hcbs\from_jing_20161006_data"
 
 use `jdpath'\reg_ready.dta
+
+
+/*
 
 keep hhidpn shhidpn year wave state totpop ptotf ptotm p65m p65f p85m p85f ///
  hpicmb nhbed tot85 tot65 nhbed1k nhbed1k65 nhbed1k85 CCRC ALR ILR ttlhcbsexp homehealthppl ///
@@ -160,7 +163,7 @@ keep if n==1
 drop n
 
 //get count of new waivers from 2000-2012
-preserve
+/*preserve
 sort state wvrnum begdate2
 bys state  wvrnum: gen n=_n
 keep if n==1 //keep first year of each waiver
@@ -175,7 +178,37 @@ bys state: gen nowaivers=_N
 keep if n2==1
 *count of waivers by state
 sum nowaivers
-restore 
+restore  */
+
+//get count of new waivers from 2005-2012
+/*preserve
+sort state wvrnum begdate2
+bys state  wvrnum: gen n=_n
+keep if n==1 //keep first year of each waiver
+keep if begdate2>=td(1jan2005) & begdate2<td(1jan2013)
+egen n_new_waivers=total(n)
+sum n_new_waivers
+
+sort state wvrnum
+bys state: gen n2=_n
+bys state: gen nowaivers=_N
+
+keep if n2==1
+*count of waivers by state
+sum nowaivers
+restore  */
+
+
+//get count of new waivers for specific states (email 10/27)
+/* preserve
+sort state wvrnum begdate2
+bys state  wvrnum: gen n=_n
+keep if n==1 //keep first year of each waiver
+keep if begdate2>=td(1jan2006) & begdate2<td(1jan2010) //want waivers 2007, 2008, 2009
+keep if inlist(state,"CA","CO","ID","IL","MA","MD","NY","OR","PA")
+sort state year
+li state year wvrnum begdate2
+restore */
 
 bys state year : gen wvr_count_sy= _N
 bys state year : gen n= _n
@@ -312,12 +345,47 @@ foreach v in wvr_count_sy svc_code_count_sy svc_code_demsp reciptotall_sy dollar
 forvalues c=1/30{
 	replace svc_code_`c'_sy=0 if missing(svc_code_`c'_sy) & impute_fl==0
 }
+**get count of waivers by state,year
+/*preserve
+keep if inlist(state,"CA","CO","ID","IL","MA","MD","NY","OR","PA")
+keep if year>2005 & year<2010
+keep year state wvr_count_sy
+reshape wide wvr_count_sy, i(state) j(year)
+li state wvr_count_sy*
+
+restore*/
+
+**percent change in the number of waivesrs from year to year
+sort state year
+by state: gen n2=_n
+gen firstobs=1 if n2==1
+by state: gen wvr_count_p1=wvr_count_sy[_n-1]
+gen wvr_count_pctchange = (wvr_count_p1-wvr_count_sy) / wvr_count_sy * 100
+replace wvr_count_pctchange=1 if firstobs==1 //set to 1 for first obs in the series
+la var wvr_count_pctchange "% change in waiver count from prev year"
+sum wvr_count_pctchange, detail
+
+gen wvr_count_incr=1 if wvr_count_pctchange>0 & !missing(wvr_count_pctchange) & firstobs!=1
+replace wvr_count_incr=0 if (wvr_count_pctchange<=0 & !missing(wvr_count_pctchange)) | firstobs==1
+la var wvr_count_incr "Increase in number of waivers from prev year"
+
+gen wvr_count_nodecr=1 if wvr_count_pctchange>=0 & !missing(wvr_count_pctchange) & firstobs!=1
+replace wvr_count_nodecr=0 if (wvr_count_pctchange<0 & !missing(wvr_count_pctchange)) | firstobs==1
+la var wvr_count_nodecr "Same or increase in number of waivers from prev year"
+
+drop n2 firstobs wvr_count_p1
 
 **save the dataset
-rename year riwendy  //update variable name to match merge dataset
+//rename year riwendy  //update variable name to match merge dataset
 la var impute_fl "State waiver information imputed from prev year"
 drop yeardiff lastobs year_p1
 save hcbs_waivers_tomerge.dta, replace
+
+**2nd version to merge by interview year only
+keep state year wvr_count_sy
+rename year riwendy  //update variable name to match merge dataset
+rename wvr_count_sy wvr_count_sy2
+save hcbs_waivers_tomerge2.dta, replace
 
 ***********************************************k***********
 **merge into dataset
@@ -326,18 +394,24 @@ use hrs_sample.dta, clear
 drop _merge
 sort hhidpn year
 
-merge 1:1 hhidpn year using geo_to_merge.dta //bring in jd's dataset
+merge 1:1 hhidpn year using geo_to_merge.dta //bring in jd's dataset by wave year
 
 drop if _merge==2 //mostly years not in my main dataset 
 drop _merge
 
-sort state riwendy
+sort state year
 
-merge m:1 state riwendy using hcbs_waivers_tomerge.dta
+merge m:1 state year using hcbs_waivers_tomerge.dta
 tab _merge
  
 tab state if _merge==1
 tab year if _merge==1 & state=="RI"
+
+**do 2nd time, just bringing in the waiver count variable using interview year
+sort state year
+
+merge m:1 state riwendy using hcbs_waivers_tomerge2.dta, gen(merge2)
+tab merge2
 
 /* notes re missing state-years
 AZ had no waivers
@@ -347,7 +421,7 @@ VT last waiver in 2005
 */
 
 **fill in missing values to 0
-local var wvr_count_sy reciptotall_sy dollartotall_sy svc_code_count_sy svc_code_demsp
+local var wvr_count_sy reciptotall_sy dollartotall_sy svc_code_count_sy svc_code_demsp 
 foreach v in `var'{
 replace `v'=0 if _merge==1
 }
@@ -356,9 +430,22 @@ forvalues c = 1/30{
 replace svc_code_`c'_sy=0 if _merge==1
 }
 
+replace wvr_count_sy2=0 if merge2==1 //for interview year merged version
+
 tab riwendy if _merge==2 //mostly years outside of date range (pre 1998 or after 2012)
 drop if _merge==2
 
 save hrs_sample2.dta, replace
 
+use  hrs_sample2.dta, clear
+forvalues c = 1/30{
+tab svc_code_`c'_sy, missing
+}
+
+***************************************************
+
+
+***************************************************
 log close
+
+

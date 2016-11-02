@@ -730,7 +730,8 @@ use pdem_help_fullds_allwaves.dta, clear
 sort hhidpn year
 drop _merge
 merge 1:1 hhidpn year using home_care_to_merge.dta
-keep if _merge==3
+tab year if _merge==1
+drop if _merge==2
 
 drop _merge
 merge 1:1 hhidpn year using help_1998_adl_all.dta

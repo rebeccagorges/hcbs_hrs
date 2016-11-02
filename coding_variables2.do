@@ -214,7 +214,8 @@ la var mdcaid1 "R No Medicaid, self report"
 **first income and assets for inflation so all 2012$
 **use the average CPI (overall CIP) for the year
 foreach v in hitot hatota{
-gen `v'_ia=`v'*1.41 if year==1998
+gen `v'_ia=`v'*1.46 if year==1996
+replace `v'_ia=`v'*1.41 if year==1998
 replace `v'_ia=`v'*1.33 if year==2000
 replace `v'_ia=`v'*1.28 if year==2002
 replace `v'_ia=`v'*1.22 if year==2004
@@ -224,22 +225,32 @@ replace `v'_ia=`v'*1.05 if year==2010
 replace `v'_ia=`v' if year==2012
 }
 
-**indicator for bottom 25% for income and assets
+**indicator for bottom x% for income and assets
 foreach v in hitot_ia hatota_ia{
-sum `v' if sample_criteria==1, detail
-sca `v'25co=r(p25)
-gen `v'_ltp25 = 1 if `v'<=`v'25co & !missing(`v') & sample_criteria==1
-replace `v'_ltp25 = 0 if `v'>`v'25co & !missing(`v') & sample_criteria==1
-tab `v'_ltp25, missing
+foreach c in 25 75 80 90 {
+	_pctile `v' if sample_criteria==1, p(`c')
+	sca `v'`c'co=r(r1)
+	gen `v'_ltp`c' = 1 if `v'<=`v'`c'co & !missing(`v') & sample_criteria==1
+	replace `v'_ltp`c' = 0 if `v'>`v'`c'co & !missing(`v') & sample_criteria==1
+	tab `v'_ltp`c', missing
+	}
 }
-rename hitot_ia_ltp25 incomeltp25
-rename hatota_ia_ltp25 assetsltp25
+
+foreach c in 25 75 80 90 {
+rename hitot_ia_ltp`c' incomeltp`c'
+rename hatota_ia_ltp`c' assetsltp`c'
+}
 
 la var incomeltp25 "HH Income <25 percentile (annual < $16,821)" 
 la var assetsltp25 "HH Assets <25 percentile ( < $46,848)"
 
 tab incomeltp25, gen(incomeltp25)
 la var incomeltp251 "Income >25 percentile"
+
+foreach c in 75 80 90 {
+la var incomeltp`c' "HH Income <`c' percentile " 
+la var assetsltp`c' "HH Assets <`c' percentile "
+}
 ****************************************************************
 save hrs_sample3.dta, replace
 

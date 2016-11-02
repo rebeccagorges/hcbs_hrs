@@ -188,7 +188,7 @@ gen dementia=(dx==1)
 gen cind=(dx==2)
 gen normal_cog=(dx==3)
 
-**merge final dignosis with ADAMS tracker file
+**merge final diagnosis with ADAMS tracker file
 merge m:1 hhid pn using `data'\adams_raw\stata_all_waves\ADAMS1TRK_R.dta, ///
  keepusing(hhid pn amonth ayear bmonth byear cmonth cyear dmonth dyear wavesel) nogen
 

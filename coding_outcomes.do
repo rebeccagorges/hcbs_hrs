@@ -272,7 +272,6 @@ sum hitot, detail
 tab hatota5, missing
 sum hatota, detail
 
-
 *****************************************************************************
 ** Family structure, children caregivers
 *****************************************************************************
@@ -281,7 +280,7 @@ tab rmstat, missing
 gen r_married=1 if inlist(rmstat,1,2,3)
 replace r_married=0 if inlist(rmstat,4,5,6,7,8)
 la var r_married "R Married or Partnered"
-tab r_married, missing
+tab r_married wave, missing
 
 **lives alone
 tab hhhres, missing
@@ -296,11 +295,50 @@ replace hanychild=0 if hchild==0 & !missing(hchild)
 la var hanychild "Any living child for R&S 1=yes"
 tab hanychild, missing
 
+**indicator for any deceased children
+tab hdiedkn, missing
+gen hdiedkn_any=1 if hdiedkn>0 & !missing(hdiedkn)
+replace hdiedkn_any=0 if hdiedkn==0
+la var hdiedkn_any "Any children deceased 1=yes"
+tab hdiedkn_any hdiedkn, missing
+
 **indicator for 1 or more daughters
+tab hndau year, missing
 gen hanydaughter=1 if hndau>0 & !missing(hndau)
-replace hanydaughter=0 if hndau==0 & !missing(hndau)
+replace hanydaughter=0 if hndau==0
 la var hanydaughter "Any daughters for R&S 1=yes"
-tab hanydaughter, missing 
+tab hanydaughter year, missing //from Rand family file so missing in 2012
+tab hanydaughter hanychild, missing
+tab hanydaughter hanychild if hdiedkn_any==0, missing //leave for now, check later
+
+**indicator for any resident children
+tab hresdkn year, missing
+gen hanyreschild=1 if hresdkn>0 & !missing(hresdkn)
+replace hanyreschild=0 if hresdkn==0
+la var hanyreschild "Any resident children for R&S 1=yes"
+tab hresdkn hanyreschild, missing
+tab hresdkn hanychild, missing //leave for now, think about updating later
+**if no children reported, then replace resident child indicator=0
+replace hanyreschild=0 if hanychild==0
+tab hresdkn hanyreschild, missing
+
+**indicator for children living within 10 miles
+tab hliv10kn year, missing
+gen hanyliv10kn=1 if hliv10kn>0 & !missing(hliv10kn)
+replace hanyliv10kn=0 if hliv10kn==0
+la var hanyliv10kn "Children living within 10 miles 1=yes"
+tab hliv10kn hanyreschild, missing
+**if no children reported, then replace child within 10mi indicator=0
+replace hanyliv10kn=0 if hanychild==0
+tab hliv10kn hanyliv10kn, missing
+
+**indicator for resident children or child within 10 miles
+tab hanyliv10kn hanyreschild if year>1996 & year<2012, missing
+
+gen hchildnearby=1 if hanyliv10kn==1 | hanyreschild==1
+replace hchildnearby=0 if hanyliv10kn==0 & hanyreschild==0
+la var hchildnearby "Resident child or child living wi 10mi"
+tab hchildnearby year,missing
 
 **indicator adult child helps with adl or iadl, 
 ** missing for 2010 data, manually do this for 2012?
@@ -355,6 +393,19 @@ la var rheart_sr "R dx heart disease, self report"
 la var rstrok_sr "R dx stroke, self report"
 la var rpsych_sr "R dx psychiatric condition, self report"
 la var rarthr_sr "R dx arthritis, self report"
+
+******************************************************************************
+
+sort hhid pn year
+by hhid pn year: gen dup=_n
+tab dup, missing
+
+sort hhidpn year
+by hhidpn year: gen dup1=_n
+tab dup1, missing
+
+li hhidpn hhid pn year if dup1==1 & dup==2
+drop dup1 dup
 
 save hrs_waves3to11_vars.dta, replace
 
