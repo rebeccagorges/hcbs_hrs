@@ -42,12 +42,44 @@ rename children pop_11
 rename elderlyorage65or60 pop_12
 rename notspecifiedadultsgeneralpo pop_13
 
-keep waivertitle wvrnum state waivertype pop_*
+la var pop_1 "Intellectual Disabilities (ID)/ Mental Retardation (MR)"
+la var pop_2 "Physical Disabilities"
+la var pop_3 "Blind"
+la var pop_4 "Developmental Disabilities (DD)"
+la var pop_5 "Mental Health Disorders"
+la var pop_6 "Autism"
+la var pop_7 "Alzheimers"
+la var pop_8 "Brain Injury (BI)"
+la var pop_9 "HIV/AIDS"
+la var pop_10 "Pregnant Women"
+la var pop_11 "Children"
+la var pop_12 "Elderly (age >=60 or 65)"
+la var pop_13 "Not specified,adults,general population"
+
+rename e y1990
+rename f y1992
+rename g y1994
+rename h y1996
+rename i y1998
+rename j y2000
+rename k y2002
+rename l y2004
+rename m y2006
+rename n y2008
+rename o y2010
+rename p y2012
+rename q y2014
 
 rename wvrnum wvrnum_numeric
 gen wvrnum = string(wvrnum)
 
 sort state wvrnum
+
+**save a version with all data fields
+save hcbs_waiver_targetpop_raw_full.dta,replace
+
+**drop data fields that we don't need and save
+keep waivertitle wvrnum state waivertype pop_*
 
 save hcbs_waiver_targetpop_raw.dta,replace
 
@@ -68,9 +100,181 @@ format begdate2 %td
 gen enddate2=date(enddate,"DMY")
 format enddate2 %td
 
+gen year2=year(enddate2)
+
+rename title waivertitle
+
 **merge population served data into main waiver data file
+keep state wvrnum year begdate enddate waivertitle begdate2 enddate2 year2
 sort state wvrnum
-merge m:1 state wvrnum using hcbs_waiver_targetpop_raw.dta
+merge m:1 state wvrnum using hcbs_waiver_targetpop_raw_full.dta
+
+tab _merge,missing
+sort state wvrnum year2
+
+gen merge_info=1 if _merge==1
+replace merge_info=2 if _merge==2
+replace merge_info=3 if _merge==3
+la def merge 1 "HCBS_wavers_all sheet only" 2 " State_plans_waivers only" ///
+3"Merged, in both sheets"
+la val merge merge_info 
+la var merge_info "waivers merge status"
+
+**now get a version with just missing waivers, formatted to the population
+**data State_Plans_Waivers format
+keep if merge_info==1
+
+**need to check/clean up typos in the year data
+tab year2, missing
+**drop if before 1992; there were some systematic errors with date coding 1988-1992
+**since we aren't using that period anyway, just drop them now
+drop if year2<1992
+
+**need to address this!
+li state wvrnum waivertitle begdate enddate if year2==.
+
+**collapse so one entry per waiver
+by state wvrnum : egen begdate3=min(begdate2)
+by state wvrnum : egen enddate3=max(enddate2)
+format begdate3 enddate3 %td
+
+by state wvrnum : gen n=_n
+keep if n==1
+
+drop n begdate2 enddate2 year2
+
+**fill in year indicators based on start and end dates
+replace y1990=0
+
+replace y1992=1 if begdate3<date("19930101","YMD") & !missing(begdate3)
+replace y1992=0 if begdate3>=date("19930101","YMD") & !missing(begdate3)
+
+replace y1994=1 if begdate3<date("19950101","YMD") & ///
+	enddate3>date("19940101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y1994=0 if (begdate3>=date("19950101","YMD") | ///
+	enddate3<date("19940101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y1996=1 if begdate3<date("19970101","YMD") & ///
+	enddate3>date("19960101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y1996=0 if (begdate3>=date("19970101","YMD") | ///
+	enddate3<date("19960101","YMD")) & !missing(begdate3) & !missing(enddate3)
+	
+replace y1998=1 if begdate3<date("19990101","YMD") & ///
+	enddate3>date("19980101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y1998=0 if (begdate3>=date("19990101","YMD") | ///
+	enddate3<date("19980101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2000=1 if begdate3<date("20010101","YMD") & ///
+	enddate3>date("20000101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2000=0 if (begdate3>=date("20010101","YMD") | ///
+	enddate3<date("20000101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2002=1 if begdate3<date("20030101","YMD") & ///
+	enddate3>date("20020101","YMD") & !missing(begdate3) & !missing(enddate3)		
+replace y2002=0 if (begdate3>=date("20030101","YMD") | ///
+	enddate3<date("20020101","YMD")) & !missing(begdate3) & !missing(enddate3)		
+
+replace y2004=1 if begdate3<date("20050101","YMD") & ///
+	enddate3>date("20040101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2004=0 if (begdate3>=date("20050101","YMD") | ///
+	enddate3<date("20040101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2006=1 if begdate3<date("20070101","YMD") & ///
+	enddate3>date("20060101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2006=0 if (begdate3>=date("20070101","YMD") | ///
+	enddate3<date("20060101","YMD")) & !missing(begdate3) & !missing(enddate3)
+	
+replace y2008=1 if begdate3<date("20090101","YMD") & ///
+	enddate3>date("20080101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2008=0 if (begdate3>=date("20090101","YMD") | ///
+	enddate3<date("20080101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2010=1 if begdate3<date("20110101","YMD") & ///
+	enddate3>date("20100101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2010=0 if (begdate3>=date("20110101","YMD") | ///
+	enddate3<date("20100101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2012=1 if begdate3<date("20130101","YMD") & ///
+	enddate3>date("20120101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2012=0 if (begdate3>=date("20130101","YMD") | ///
+	enddate3<date("20120101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+replace y2014=1 if begdate3<date("20150101","YMD") & ///
+	enddate3>date("20140101","YMD") & !missing(begdate3) & !missing(enddate3)
+replace y2014=0 if (begdate3>=date("20150101","YMD") | ///
+	enddate3<date("20140101","YMD")) & !missing(begdate3) & !missing(enddate3)
+
+drop wvrnum_numeric dup _merge merge_info begdate3 enddate3 begdate enddate year
+save add_to_target_pop_sheet.dta , replace
+
+describe
+
+use hcbs_waiver_targetpop_raw_full.dta, clear
+
+describe
+
+drop wvrnum_numeric
+order wvrnum, after(waivertitle)
+
+sort state wvrnum
+merge 1:m state wvrnum using add_to_target_pop_sheet.dta
+
+rename _merge xlssheet
+la def xlssheet 1 "orig target pop sheet" 2 "in waivers all but not target pop"
+la val xlssheet sheet
+tab xlssheet, missing
+
+sort state wvrnum
+capture drop dup
+quietly by  state wvrnum :  gen dup = cond(_N==1,0,_n)
+tab dup, missing
+drop dup
+
+export excel using waivers_merged_rg_20170215.xlsx, firstrow(varlabels) replace
+
+/*append using add_to_target_pop_sheet.dta, gen(sheet)
+la def sheet 0 "orig target pop sheet" 1 "in waivers all but not target pop"
+la val sheet sheet
+tab sheet, missing
+
+
+
+
+
+/*
+
+keep title wvrnum state year2
+
+
+
+
+rename year2 y
+rename title waivertitle
+
+egen wvrid = concat(state wvrnum)
+
+capture drop dup
+sort wvrid y
+quietly by  wvrid y :  gen dup = cond(_N==1,0,_n)
+tab dup, missing
+
+keep if dup==0
+
+replace y=1900+y if 92<=y<=99
+//replace y=2000+y if 00<=y<=21
+/*
+bysort wvrid (waivertitle): replace waivertitle = waivertitle[1]
+gen y2=y
+
+reshape wide y2,i(wvrid) j(y)
+
+save add_to_state_plans_waivers.dta,replace
+
+
+/*
+
+**export into excel
+
 
 /*
 
