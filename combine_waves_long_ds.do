@@ -10,18 +10,19 @@ set more off
 set maxvar 15000
 
 //log using C:\Users\Rebecca\Documents\UofC\research\hcbs\logs\setup1_log.txt, text replace
-log using E:\hrs\logs\setup1_log.txt, text replace
+//log using E:\hrs\logs\setup1_log.txt, text replace
+log using \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\logs\setup1_log.txt, text replace
 
 //local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
-local data E:\hrs\data
-
+//local data E:\hrs\data
+local data \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\data
 cd `data'
 
 *********************************************************************************
 **save dataset with just needed variables, get cognition variables from HRS xwave file
 use `data'\public_raw\rndhrs_o.dta, clear
 
-keep *hhidpn *hhid pn inw* *iwstat *cendiv *shlt *hlthlm *depres *effort ///
+keep *hhidpn *hhid pn inw* *iwstat *cendiv *wtresp *shlt *hlthlm *depres *effort ///
  *sleepr *whappy *flone *fsad *going *enlife ///
  *cesd *cesdm *walkr *walkrh *walkre *dress *dressh *bath *bathh *eat *eath ///
 *bed *bedh *bede *toilt *toilth *walkra *dressa *batha *eata *beda *toilta ///
@@ -52,7 +53,7 @@ forvalues i=3/11{
 use rand_trunc.dta, clear
 
 **keep only specific wave variables
-keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'cendiv ///
+keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'cendiv *`i'wtresp ///
  *`i'shlt *`i'hlthlm *`i'depres *`i'effort ///
 *`i'sleepr *`i'whappy *`i'flone *`i'fsad *`i'going *`i'enlife ///
  *`i'cesd *`i'cesdm *`i'walkr *`i'walkrh *`i'walkre *`i'dress *`i'dressh ///
@@ -85,7 +86,7 @@ drop if inw`i'==0
 drop inw`i'
 
 **rename variables that are both r/s variables
-local rsvars iwstat cendiv shlt hlthlm depres effort sleepr whappy flone fsad going enlife ///
+local rsvars iwstat cendiv wtresp shlt hlthlm depres effort sleepr whappy flone fsad going enlife ///
  cesd cesdm walkr walkrh walkre dress dressh bath bathh eat eath ///
  bed bedh bede toilt toilth walkra dressa batha eata beda toilta ///
 adla adlwa map phone money meds shop meals mapa phonea moneya ///
