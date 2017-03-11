@@ -8,10 +8,10 @@ local dofiles C:\Users\Rebecca\Documents\GitHub\hcbs_hrs
 //do `dofiles'/combine_waves_long_ds.do
 
 **add data from Rand family file, probability of dementia
-//do `dofiles'/addl_data_merge.do
+do `dofiles'/addl_data_merge.do
 
 **initial outcomes variables coding
-//do `dofiles'/coding_outcomes.do
+do `dofiles'/coding_outcomes.do
 
 **generate IQCODE, ADAMS datasets to merge in next step
 //do `dofiles'/impute_dementia_preprocessing.do 
@@ -32,7 +32,7 @@ do `dofiles'/geo_data_merge.do
 do `dofiles'/coding_variables2.do
 
 **first pass at sample sizes - preliminary
-//do `dofiles'/sample_size_tables.do
+do `dofiles'/sample_size_tables.do
 
 **exploring iv's
-do `dofiles'/iv_work.do
+//do `dofiles'/iv_work.do

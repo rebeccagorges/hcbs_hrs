@@ -10,19 +10,20 @@ set more off
 set maxvar 15000
 
 //log using C:\Users\Rebecca\Documents\UofC\research\hcbs\logs\setup1_log.txt, text replace
-//log using E:\hrs\logs\setup1_log.txt, text replace
-log using \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\logs\setup1_log.txt, text replace
+log using E:\hrs\logs\setup1_log.txt, text replace
+//log using \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\logs\setup1_log.txt, text replace
 
 //local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
-//local data E:\hrs\data
-local data \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\data
+local data E:\hrs\data
+//local data \\itsnas\udesk\users\rjgorges\Documents\hcbs_hrs\data
 cd `data'
+
 
 *********************************************************************************
 **save dataset with just needed variables, get cognition variables from HRS xwave file
-use `data'\public_raw\rndhrs_o.dta, clear
+/*use `data'\public_raw\rndhrs_o.dta, clear
 
-keep *hhidpn *hhid pn inw* *iwstat *cendiv *wtresp *shlt *hlthlm *depres *effort ///
+keep *hhidpn *hhid pn *cohort *cohbyr inw* *iwstat *cendiv *wtresp *wtr_nh * *shlt *hlthlm *depres *effort ///
  *sleepr *whappy *flone *fsad *going *enlife ///
  *cesd *cesdm *walkr *walkrh *walkre *dress *dressh *bath *bathh *eat *eath ///
 *bed *bedh *bede *toilt *toilth *walkra *dressa *batha *eata *beda *toilta ///
@@ -38,9 +39,11 @@ keep *hhidpn *hhid pn inw* *iwstat *cendiv *wtresp *shlt *hlthlm *depres *effort
 *itot *atota raeduc *wthh *proxy *iwbeg ///
 *iwbegf *iwend *iwendf *iwmid *iwmidf *iwendm *iwendy ///
 *higov *govmr *govmd *govva *covr *covs *henum *hiothp *hiltc *tyltc  ///
-*hibp *diab *cancr *lung *heart *strok *psych *arthr 
+*hibp *diab *cancr *lung *heart *strok *psych *arthr ///
+*hibpe *diabe *cancre *lunge *hearte *stroke *psyche *arthre 
 
 save rand_trunc.dta, replace  
+*/
 
 *****************************************************************************
 **convert data to long format
@@ -54,6 +57,7 @@ use rand_trunc.dta, clear
 
 **keep only specific wave variables
 keep hhidpn s`i'hhidpn hhid pn inw`i' *`i'iwstat *`i'cendiv *`i'wtresp ///
+hacohort racohbyr s`i'cohbyr ///
  *`i'shlt *`i'hlthlm *`i'depres *`i'effort ///
 *`i'sleepr *`i'whappy *`i'flone *`i'fsad *`i'going *`i'enlife ///
  *`i'cesd *`i'cesdm *`i'walkr *`i'walkrh *`i'walkre *`i'dress *`i'dressh ///
@@ -76,7 +80,8 @@ s`i'gender s`i'racem s`i'hispan ///
 h`i'itot h`i'atota raeduc *`i'proxy *`i'iwbeg ///
 *`i'iwbegf *`i'iwend *`i'iwendf *`i'iwmid *`i'iwmidf *`i'iwendm *`i'iwendy ///
 *`i'higov *`i'govmr *`i'govmd *`i'govva *`i'covr *`i'covs *`i'henum *`i'hiothp *`i'hiltc *`i'tyltc ///
-*`i'hibp *`i'diab *`i'cancr *`i'lung *`i'heart *`i'strok *`i'psych *`i'arthr  
+*`i'hibp *`i'diab *`i'cancr *`i'lung *`i'heart *`i'strok *`i'psych *`i'arthr  ///
+*`i'hibpe *`i'diabe *`i'cancre *`i'lunge *`i'hearte *`i'stroke *`i'psyche *`i'arthre  
 
 gen year=`i'*2+1990
 gen wave=`i'
@@ -96,8 +101,8 @@ nrshom nrsnit nhmliv nhmday homcar agem_b agey_b agem_e agey_e ///
 mstat mpart mcurln  livsib   proxy iwbeg ///
 iwbegf iwend iwendf iwmid iwmidf iwendm iwendy ///
 higov govmr govmd govva covr covs henum hiothp hiltc tyltc ///
-hibp diab cancr lung heart strok psych arthr  
-
+hibp diab cancr lung heart strok psych arthr  ///
+hibpe diabe cancre lunge hearte stroke psyche arthre 
 
 foreach v in r s {
 	foreach name in `rsvars' {
@@ -107,7 +112,7 @@ foreach v in r s {
 	}
 	
 **rename spouse only variables
-local svars hhidpn byear bmonth bflag bdate dyear dmonth ddate nyear nmonth ndate iyear ///
+local svars hhidpn cohbyr byear bmonth bflag bdate dyear dmonth ddate nyear nmonth ndate iyear ///
 imonth idate ndatef idatef gender racem hispan evbrn 
 
 foreach name in `svars' {
@@ -157,12 +162,12 @@ save rand_w4_m.dta, replace
 forvalues i=5/9 {
 use rand_trunc.dta, clear
 
-keep hhidpn inw`i' *`i'memry *`i'memryq *`i'memrye *`i'memrys *`i'memryf
+keep hhidpn inw`i' *`i'wtr_nh *`i'memry *`i'memryq *`i'memrye *`i'memrys *`i'memryf
 drop if inw`i'==0 
 drop inw`i'
 
 foreach v in r s {
-	foreach name in memry memryq memrye memrys memryf {
+	foreach name in wtr_nh memry memryq memrye memrys memryf {
 		rename `v'`i'`name' `v'`name'
 		}
 	
@@ -176,16 +181,16 @@ save rand_w`i'_m.dta, replace
 }
 
 
-**wave 10-11
-forvalues i=10/11 {
+**wave 10
+local i=10 
 use rand_trunc.dta, clear
 
-keep hhidpn inw`i' *`i'alzhe *`i'demen
+keep hhidpn inw`i' *`i'wtr_nh *`i'alzhe *`i'demen
 drop if inw`i'==0 
 drop inw`i'
 
 foreach v in r s {
-	foreach name in alzhe demen {
+	foreach name in wtr_nh alzhe demen {
 		rename `v'`i'`name' `v'`name'
 		}
 	
@@ -196,7 +201,30 @@ use rand_w`i'.dta
 merge 1:1 hhidpn using wave`i'vars.dta
 drop _merge
 save rand_w`i'_m.dta, replace
-}
+
+
+**wave 11
+local i=11 
+use rand_trunc.dta, clear
+
+keep hhidpn inw`i'  *`i'alzhe *`i'demen
+drop if inw`i'==0 
+drop inw`i'
+
+foreach v in r s {
+	foreach name in  alzhe demen {
+		rename `v'`i'`name' `v'`name'
+		}
+	
+	}
+	
+save wave`i'vars.dta, replace
+use rand_w`i'.dta
+merge 1:1 hhidpn using wave`i'vars.dta
+drop _merge
+save rand_w`i'_m.dta, replace
+
+
 
 **bring waves 3-11 into single, long dataset
 use rand_w3.dta, clear

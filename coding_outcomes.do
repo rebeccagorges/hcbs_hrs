@@ -385,12 +385,20 @@ replace r`v'_sr=0 if r`v'==4
 tab r`v'_sr, missing
 }
 
+* Stroke has additional option 2=TIA/possible stroke, count this as stroke
+replace rstrok_sr=1 if rstrok==2
+tab rstrok_sr, missing
+
+* Heart disease has item for had problem before elderly; doesn't have problem now
+replace rheart_sr=0 if rheart==6
+tab rheart_sr,missing
+
 la var rhibp_sr "R dx high blood pressure, self report"
 la var rdiab_sr "R dx diabetes, self report"
 la var rcancr_sr "R dx cancer, self report"
 la var rlung_sr "R dx lung disease, self report"
 la var rheart_sr "R dx heart disease, self report"
-la var rstrok_sr "R dx stroke, self report"
+la var rstrok_sr "R dx stroke / tia, self report"
 la var rpsych_sr "R dx psychiatric condition, self report"
 la var rarthr_sr "R dx arthritis, self report"
 
