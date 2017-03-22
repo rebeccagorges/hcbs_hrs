@@ -11,6 +11,9 @@
 **	 HRS survey, IQCODE components for proxy interview cognition measure
 **	 ADAMS dementia diagnosis
 
+**Revisions
+**3/22/17: Updated to use Rand 2012 family dataset; HRS cognition ds through 2014
+
 capture log close
 clear all
 set more off
@@ -24,19 +27,20 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 ****************************************************************************
-**Rand family dataset **up to wave 10 only
+**Rand family dataset **up to wave 11 only
 ****************************************************************************
-**family dataset only through 2010 (wave 10) data as of August 2016
-use `data'\public_raw\rndfamC_stata\StataSE\rndfamr_c.dta, clear
-keep *hhidpn *hhid pn inw* *ndau *hlpadlkn *hlpiadlkn *resdkn *liv10kn *diedkn
+**family dataset through 2012 (wave 11) as of March 2017
+/*
+use `data'\public_raw\randhrsfam1992_2012v1_STATA\randhrsfamr1992_2012v1.dta, clear
+keep *hhidpn *hhid pn inw* *ndau *hlpadlkn *hlpiadlkn *resdkn *lv10mikn *diedkn
 save rand_fam_trunc.dta, replace  
-
+*/
 **need to convert this ds from wide to long format
-forvalues i=3/10{
+forvalues i=3/11{
 use rand_fam_trunc.dta, clear
 
 **keep only specific wave variables
-keep hhidpn inw`i' h`i'ndau *`i'hlpadlkn *`i'hlpiadlkn *`i'resdkn *`i'diedkn 
+keep hhidpn inw`i' h`i'ndau *`i'hlpadlkn *`i'hlpiadlkn *`i'resdkn *`i'lv10mikn *`i'diedkn 
 
 gen year=`i'*2+1990
 gen wave=`i'
@@ -56,55 +60,23 @@ foreach v in r s {
 	}
 	
 **rename household variables	
-local hhvars ndau resdkn diedkn
+local hhvars ndau resdkn lv10mikn diedkn
 foreach name in `hhvars' {
 	rename h`i'`name' h`name'
 	}	
 		
 save rand_fam_w`i'.dta, replace
 }
+
 *************************************************************
-**variable only in wave 4 and later
-forvalues i=4/10{
-use rand_fam_trunc.dta, clear
-
-**keep only specific wave variables
-keep hhidpn inw`i' h`i'liv10kn
-
-gen year=`i'*2+1990
-gen wave=`i'
-
-*only keep persons who had an interview in the specific wave
-drop if inw`i'==0 
-drop inw`i'
-
-**rename household variables	
-local hhvars liv10kn 
-foreach name in `hhvars' {
-	rename h`i'`name' h`name'
-	}	
-		
-save rand_fam_w`i'_2.dta, replace
-}
+**merge waves 3-11 into the Rand main, long dataset
 *************************************************************
-**merge waves 3-10 into the Rand main, long dataset
-*************************************************************
-**first merge wave specific datasets
-use rand_fam_w3.dta, clear
-save rand_fam_w3_a.dta, replace
-
-forvalues i=4/10{
-use rand_fam_w`i'.dta, clear
-merge 1:1 hhidpn wave using rand_fam_w`i'_2.dta
-drop _merge
-save rand_fam_w`i'_a.dta, replace
-}
 
 *combine into single dataset of family level data
-use rand_fam_w3_a.dta, clear
+use rand_fam_w3.dta, clear
 
-forvalues i=4/10{
-append using rand_fam_w`i'_a.dta
+forvalues i=4/11{
+append using rand_fam_w`i'.dta
 }
 
 **check for duplicates in the family dataset
@@ -121,11 +93,9 @@ capture drop _merge
 
 merge 1:1 hhidpn wave using rand_fam_allwaves.dta
 tab wave if _merge==3
-**n=20566 that do not have family data but are in main dataset
-tab rhlpadlkn year, missing
-tab hliv10kn year, missing
 
-drop if _merge==2
+tab rhlpadlkn year, missing
+tab hlv10mikn year, missing
 
 **check for duplicates
 sort hhidpn year
@@ -138,14 +108,6 @@ tab dup2, missing
 
 drop dup1 dup2
 
-/*
-**manually do wave 10 to check why this wave has observations where _merge==2
-use rand_waves3to11.dta, clear
-merge 1:1 hhidpn wave using rand_fam_w10.dta
-**2 observations in wave 10 have family file, but missing in rand ds 
-**have .k=no children; .u=unmarried in family file, so drop from ds since
-**family variables don't contain any information anyway.
-*/
 drop _merge
 save rand_addl_ds_1.dta, replace
 
@@ -177,7 +139,7 @@ save `data'\rand_addl_ds_2.dta, replace
 ****************************************************************************
 
 **first set up cognition dataset from wide to long format
-use `data'\public_raw\CogImp\COGIMP9212A_r.dta, clear
+use `data'\public_raw\CogImpV5.0\COGIMP9214A_R.dta, clear
 rename *,l
 
 egen hhidpn=concat(hhid pn)

@@ -1,6 +1,6 @@
 **Rebecca Gorges
 **July 2016
-**Starts with RAND version O public dataset, keeps only relevant variables
+**Starts with RAND version P public dataset, keeps only relevant variables
 **Converts dataset from wide to long format so final ds has one row per core interview
 **Final dataset is saved as rand_waves3to11.dta
 
@@ -21,7 +21,7 @@ cd `data'
 
 *********************************************************************************
 **save dataset with just needed variables, get cognition variables from HRS xwave file
-/*use `data'\public_raw\rndhrs_o.dta, clear
+/*use `data'\public_raw\rndhrs_p.dta, clear
 
 keep *hhidpn *hhid pn *cohort *cohbyr inw* *iwstat *cendiv *wtresp *wtr_nh * *shlt *hlthlm *depres *effort ///
  *sleepr *whappy *flone *fsad *going *enlife ///
@@ -103,6 +103,8 @@ iwbegf iwend iwendf iwmid iwmidf iwendm iwendy ///
 higov govmr govmd govva covr covs henum hiothp hiltc tyltc ///
 hibp diab cancr lung heart strok psych arthr  ///
 hibpe diabe cancre lunge hearte stroke psyche arthre 
+
+**wave 12 notes: missing slfmem
 
 foreach v in r s {
 	foreach name in `rsvars' {
