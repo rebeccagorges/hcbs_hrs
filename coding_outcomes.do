@@ -323,14 +323,14 @@ replace hanyreschild=0 if hanychild==0
 tab hresdkn hanyreschild, missing
 
 **indicator for children living within 10 miles
-tab hliv10kn year, missing
-gen hanyliv10kn=1 if hliv10kn>0 & !missing(hliv10kn)
-replace hanyliv10kn=0 if hliv10kn==0
+tab hlv10mikn year, missing
+gen hanyliv10kn=1 if hlv10mikn>0 & !missing(hlv10mikn)
+replace hanyliv10kn=0 if hlv10mikn==0
 la var hanyliv10kn "Children living within 10 miles 1=yes"
-tab hliv10kn hanyreschild, missing
+tab hlv10mikn hanyreschild, missing
 **if no children reported, then replace child within 10mi indicator=0
 replace hanyliv10kn=0 if hanychild==0
-tab hliv10kn hanyliv10kn, missing
+tab hlv10mikn hanyliv10kn, missing
 
 **indicator for resident children or child within 10 miles
 tab hanyliv10kn hanyreschild if year>1996 & year<2012, missing
@@ -342,9 +342,20 @@ tab hchildnearby year,missing
 
 **indicator adult child helps with adl or iadl, 
 ** missing for 2010 data, manually do this for 2012?
-/*sum rhlpadlkn, detail //number children help with adls
-sum rhlpiadlkn, detail //number of children help with iadls 
-need to create binary variable for having a child help with adl or iadl*/
+tab rhlpadlkn year, missing //number children help with adls
+tab rhlpiadlkn year, missing //number of children help with iadls 
+
+gen rhlpadlk_ind=1 if rhlpadlkn>0 & !missing(rhlpadlkn)
+replace rhlpadlk_ind=0 if rhlpadlkn==0 & !missing(rhlpadlkn)
+gen rhlpiadlk_ind=1 if rhlpiadlkn>0 & !missing(rhlpiadlkn)
+replace rhlpiadlk_ind=0 if rhlpiadlkn==0 & !missing(rhlpiadlkn)
+la var rhlpadlk_ind "Adult child helps with ADLs 1=yes"
+la var rhlpiadlk_ind "Adult child helps with IADLs 1=yes"
+
+gen rhlp_adl_or_iadl_k_ind=1 if rhlpadlk_ind==1 | rhlpiadlk_ind==1
+replace rhlp_adl_or_iadl_k_ind=0 if rhlpadlk_ind==0 & rhlpiadlk_ind==0
+la var rhlp_adl_or_iadl_k_ind "Adult child helps with ADL/IADL 1=yes"
+tab rhlp_adl_or_iadl_k_ind year if hanychild>0 & !missing(hanychild), missing
 
 *****************************************************************************
 ** Health insurance
@@ -365,7 +376,6 @@ la var rmedicaid_sr_missing "R Medicaid missing indicator 1=missing"
 tab rmedicaid_sr rmedicaid_sr_missing, missing
 
 tab rage_cat rmedicaid_sr, missing
-
 
 *****************************************************************************
 ** Medical diagnoses
