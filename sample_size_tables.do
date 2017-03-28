@@ -145,7 +145,6 @@ ctitles("Method", "Overall sample","","Self interview","","Proxy interview" \ //
 **********************************
 **Venn diagram, dementia measures
 **********************************
-drop _merge
 venndiag sr_mem_dis_any pred_dem_cat1 cog_comb
 graph export `logpath'\dementia_vars_venn.tif, as(tif) replace
 

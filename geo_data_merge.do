@@ -61,22 +61,38 @@ sort hhidpn year
 
 merge 1:1 hhidpn year using geo_to_merge.dta //bring in jd's dataset by wave year
 
-drop if _merge==2 //mostly years not in my main dataset 
+tab year if _merge==2, missing 
+li hhidpn year riwstat wave state if _merge==2 & year==2012
+li hhidpn year riwstat wave state if _merge==1 
+
+drop if _merge==2 // years not in my dataset 
+drop if _merge==1 // 
+**I suspect the 2 ids that don't match are related to JG using rand v. O as the 
+** starting point while I'm now using v. P
+
+tab _merge, missing
+
 drop _merge
 
 sort state year
 
+**uses wave year (not interview year) to do the merge 
+**(ex. if ivw was wave 10 (2010) but conducted in 2011, merge with 2010 waiver information)
 merge m:1 state year using hcbs_waivers_tomerge.dta
 tab _merge
  
 tab state if _merge==1
 tab year if _merge==1 & state=="RI"
 
+drop if _merge==2
+
 **do 2nd time, just bringing in the waiver count variable using interview year
 sort state year
 
 merge m:1 state riwendy using hcbs_waivers_tomerge2.dta, gen(merge2)
 tab merge2
+
+drop if merge2==2
 
 /* notes re missing state-years
 AZ had no waivers
@@ -97,8 +113,7 @@ replace svc_code_`c'_sy=0 if _merge==1
 
 replace wvr_count_sy2=0 if merge2==1 //for interview year merged version
 
-tab riwendy if _merge==2 //mostly years outside of date range (pre 1998 or after 2012)
-drop if _merge==2
+drop _merge merge2
 
 save hrs_sample2.dta, replace
 
