@@ -21,84 +21,203 @@ cd `data'
 use rand_addl_ds_3.dta, clear
 
 *****************************************************************************
-** Outcome variables
+** Outcome variables - for both R and S where applicable
 *****************************************************************************
+*first identify which R's have spouses
+gen sid_ind=1 if shhidpn!=0
+replace sid_ind=0 if shhidpn==0
+la var sid_ind "Spouse ID 1=yes"
+tab rmstat sid_ind , missing
 
 **self reported heatlh
-tab rshlt wave, missing
-gen rshlt_fp = 1 if inlist(rshlt,4,5)
-replace rshlt_fp = 0 if inlist(rshlt,1,2,3)
+foreach i in r s{
+tab `i'shlt wave, missing
+gen `i'shlt_fp = 1 if inlist(`i'shlt,4,5)
+replace `i'shlt_fp = 0 if inlist(`i'shlt,1,2,3)
+}
+
 la var rshlt_fp "R Self-report health = fair or poor"
+la var sshlt_fp "S Self-report health = fair or poor"
 tab rshlt_fp wave, missing
+tab sshlt_fp wave if sid_ind==1, missing
+
 
 **health limits work
 tab rhlthlm wave, missing
+tab shlthlm wave, missing
 **note, waves 3,7 have missingness
 **wave 3: question skipped ~7000 r's
 **wave 7: question skipped, assumed yes (.y) if answered yes in previous interview
 **wave 7: not working also introduced as possible response
+foreach i in r s{
+gen `i'hlthlm1 = `i'hlthlm
+replace `i'hlthlm1=1 if `i'hlthlm==.y & wave==7
+tab `i'hlthlm `i'hlthlm1, missing
+}
 
 **cesd score - depression
-tab rcesd wave, missing
-tab rcesd rproxy, missing //for non-proxy interviews only
-gen rcesd_gt3=1 if rcesd>3 & rcesd!=.m
-replace rcesd_gt3=0 if rcesd<4 & rcesd!=.m
+foreach i in r s{
+tab `i'cesd wave, missing
+tab `i'cesd `i'proxy, missing //for non-proxy interviews only
+
+gen `i'cesd_gt3=1 if `i'cesd>3 & `i'cesd!=.m
+replace `i'cesd_gt3=0 if `i'cesd<4 & `i'cesd!=.m
+}
+*set spouse to missing if nonresponse or not married
+replace scesd_gt3=. if scesd==.u | scesd==.v
+
 la var rcesd_gt3 "R CESD gt 3 = clinicial depress cutoff"
+la var scesd_gt3 "S CESD gt 3 = clinicial depress cutoff"
 tab rcesd_gt3, missing
+tab scesd_gt3, missing 
 
 **bmi 
-sum rbmi, detail
-gen rbmi_cat = 1 if rbmi>=18 & rbmi<=25
-replace rbmi_cat = 2 if rbmi>25 & rbmi<30
-replace rbmi_cat = 3 if rbmi>=30
-replace rbmi_cat = 4 if rbmi<18
-replace rbmi_cat = . if inlist(rbmi,.d,.m,.r)
+foreach i in r s{
+sum `i'bmi, detail
+gen `i'bmi_cat = 1 if `i'bmi>=18 & `i'bmi<=25
+replace `i'bmi_cat = 2 if `i'bmi>25 & `i'bmi<30
+replace `i'bmi_cat = 3 if `i'bmi>=30
+replace `i'bmi_cat = 4 if `i'bmi<18
+replace `i'bmi_cat = . if inlist(`i'bmi,.d,.m,.r,.u,.v)
+}
+
 la def bmi 1 "Normal BMI 18-25" 2"Overweight BMI 25-30" 3 "Obese BMI 30+" ///
 4 "Underweight BMI <18"
-la val rbmi_cat bmi  
+la val rbmi_cat sbmi_cat bmi  
 la var rbmi_cat "R BMI Categorical"
+la var sbmi_cat "S BMI Categorical"
 tab rbmi_cat, missing
-sort rbmi_cat
-by rbmi_cat: sum rbmi
+tab sbmi_cat, missing
+bys rbmi_cat: sum rbmi
+bys sbmi_cat: sum sbmi
 
 **gen indicator for not-normal bmi
-gen rbmi_not_normal=1 if inlist(rbmi_cat,2,3,4)
-replace rbmi_not_normal=0 if rbmi_cat==1
-la var rbmi_not_normal "BMI not in normal range"
-tab rbmi_not_normal, missing
+foreach i in r s{
+gen `i'bmi_not_normal=1 if inlist(`i'bmi_cat,2,3,4)
+replace `i'bmi_not_normal=0 if `i'bmi_cat==1
+tab `i'bmi_not_normal, missing
+}
+
+la var rbmi_not_normal "R BMI not in normal range"
+la var rbmi_not_normal "S BMI not in normal range"
 
 **adl/iadl impairment
 **uses RAND "some difficulty" with ADL / IADL count variables
 **ADL includes bathe,dress,eat,get in/out of bed, walking across room
 **IADL includes phone, money, medications, shopping, meal prep
-tab radla, missing
-tab riadlza, missing
-gen radlimpair=1 if inlist(radla,1,2,3,4,5)
-replace radlimpair=1 if inlist(riadlza,1,2,3,4,5)
-replace radlimpair=0 if radla==0 & riadlza==0
+foreach i in r s{
+tab `i'adla, missing
+tab `i'iadlza, missing
+gen `i'adlimpair=1 if inlist(`i'adla,1,2,3,4,5)
+replace `i'adlimpair=1 if inlist(`i'iadlza,1,2,3,4,5)
+replace `i'adlimpair=0 if `i'adla==0 & `i'iadlza==0
+}
 la var radlimpair "R 1+ ADL/IADL difficulty"
+la var sadlimpair "S 1+ ADL/IADL difficulty"
 tab radlimpair, missing
 tab radlimpair radla, missing
 tab radlimpair riadlza, missing
+tab sadlimpair, missing
+tab sadlimpair sadla, missing
+tab sadlimpair siadlza, missing
+
+**indicator any ADL limitations
+foreach i in r s{
+gen `i'adl_diff=1 if `i'adla>0 & !missing(`i'adla)
+replace `i'adl_diff=0 if `i'adla==0 & !missing(`i'adla)
+tab `i'adla `i'adl_diff, missing
+}
+la var radl_diff "R 1+ ADL limitations"
+la var sadl_diff "S 1+ ADL limitations"
+
+**indicator any IADL limitations
+foreach i in r s{
+gen `i'iadl_diff=1 if `i'iadla>0 & !missing(`i'iadla)
+replace `i'iadl_diff=0 if `i'iadla==0 & !missing(`i'iadla)
+tab `i'iadla `i'iadl_diff, missing
+}
+la var riadl_diff "R 1+ IADL limitations"
+la var siadl_diff "S 1+ IADL limitations"
 
 **unemployed
-tab rlbrf, missing
-tab runemp, missing
-gen runemp_ind = 1 if runemp==1
-replace runemp_ind = 0 if inlist(runemp,.x,.i,0)
+foreach i in r s{
+tab `i'lbrf, missing
+tab `i'unemp, missing
+gen `i'unemp_ind = 1 if `i'unemp==1
+replace `i'unemp_ind = 0 if inlist(`i'unemp,.x,.i,0)
+}
 la var runemp_ind "R unemployed 1=yes; 0 includes not in lf"
+la var sunemp_ind "S unemployed 1=yes; 0 includes not in lf"
 tab runemp_ind, missing
 tab runemp_ind runemp, missing
 tab runemp_ind rlbrf, missing //some discrepancies between this and runemp, use runemp variable
+tab sunemp_ind, missing
+tab sunemp_ind sunemp, missing
+tab sunemp_ind slbrf, missing //some discrepancies between this and sunemp, use sunemp variable
+
+foreach i in r s{
+gen `i'lbrf1=1 if inlist(`i'lbrf,1,2,4)
+replace `i'lbrf1=2 if `i'lbrf==3
+replace `i'lbrf1=3 if inlist(`i'lbrf,5,6,7)
+}
+la def lbrf1 1 "1.working (ft/pt)" 2 "2.unemployed" 3 "3.not in lbrf (retired, disabled, sr not in)"
+la val rlbrf1 slbrf1 lbrf1
+tab rlbrf rlbrf1, missing
+tab slbrf slbrf1, missing
 
 **hours per week worked, add primary job + additional job variables
 ** if not working .w code originally, kept as missing here, may want to review this
-sum rjhours, detail
-sum rjhour2,detail
-gen rhours_worked=rjhours if !missing(rjhours)
-replace rhours_worked=rjhours+rjhour2 if !missing(rjhour2)
-sum rhours_worked, detail
+foreach i in r s{
+sum `i'jhours, detail
+sum `i'jhour2,detail
+gen `i'hours_worked=`i'jhours if !missing(`i'jhours)
+replace `i'hours_worked=`i'jhours+`i'jhour2 if !missing(`i'jhour2)
+sum `i'hours_worked, detail
+}
 la var rhours_worked "R Hours worked/week at current job, includes second job"
+la var shours_worked "S Hours worked/week at current job, includes second job"
+bys rlbrf1: sum rhours_worked
+bys slbrf1: sum shours_worked
+
+**mortality based on time from interview
+tab raddate if missing(raddate),missing //.x=missing - 
+sum raddate, detail
+format raddate %td
+gen rdeathdate_ind=1 if !missing(raddate)
+replace rdeathdate_ind=0 if missing(raddate)
+la var rdeathdate_ind "R Died, indicator from death date"
+tab rdeathdate_ind, missing
+
+tab sddate if missing(sddate), missing
+format sddate %td
+gen sdeathdate_ind=1 if !missing(sddate)
+replace sdeathdate_ind=0 if sddate==.x //if no spouse or s non response, leave missing
+la var sdeathdate_ind "S Died, indicator from death date"
+tab sdeathdate_ind, missing
+
+sum riwend, detail
+format riwend %td
+gen rivw_to_death_days = raddate-riwend
+sum rivw_to_death_days, detail
+li riwend raddate raidatef if rivw_to_death_days<0
+gen sivw_to_death_days = sddate-riwend //days from R's interview
+sum sivw_to_death_days, detail
+tab rmstat if sivw_to_death_days<0, missing
+
+foreach i in r s{
+gen `i'mortality_1yr=1 if `i'ivw_to_death_days<366 & `i'deathdate_ind==1
+replace `i'mortality_1yr=0 if (`i'deathdate_ind==1 & `i'ivw_to_death_days>=366 ) | `i'deathdate_ind==0
+
+gen `i'mortality_2yr=1 if `i'ivw_to_death_days<731 & `i'deathdate_ind==1
+replace `i'mortality_2yr=0 if (`i'deathdate_ind==1 & `i'ivw_to_death_days>=731 ) | `i'deathdate_ind==0
+}
+la var rmortality_1yr "R Died within 1 year of interview"
+la var rmortality_2yr "R Died within 2 years of interview"
+la var smortality_1yr "S Died within 1 year of interview"
+la var smortality_2yr "S Died within 2 years of interview"
+
+tab rmortality_1yr smortality_1yr, missing
+tab rmortality_2yr smortality_2yr, missing
 
 *****************************************************************************
 ** Dementia variables
@@ -120,36 +239,44 @@ replace tics_missing=1 if missing(rcogtot)
 tab rcogtot if tics_missing==1, missing
 
 **cognition questions not asked if <65yo
-gen age_lt_65=1 if ragey_e<65
-replace age_lt_65=0 if ragey_e>=65 & !missing(ragey_e)
-tab age_lt_65, missing
-
+foreach i in r s{
+gen `i'age_lt_65=1 if `i'agey_e<65
+replace `i'age_lt_65=0 if `i'agey_e>=65 & !missing(`i'agey_e)
+tab `i'age_lt_65, missing
+}
 **dementia probability not imputed if <70yo
-gen age_lt_70=1 if ragey_e<70
-replace age_lt_70=0 if ragey_e>=70 & !missing(ragey_e)
-tab age_lt_70, missing
-
+foreach i in r s{
+gen `i'age_lt_70=1 if `i'agey_e<70
+replace `i'age_lt_70=0 if `i'agey_e>=70 & !missing(`i'agey_e)
+tab `i'age_lt_70, missing
+}
 tab rcogimp_tics_ind ralzhe, missing
 
 **self report of alzheimers or dementia
-tab ralzhe rdemen if inlist(wave,10,11), missing
-gen ralzdem_sr=1 if ralzhe==1 | rdemen==1
-replace ralzdem_sr=0 if ralzhe==0 & rdemen==0
-tab ralzdem_sr if inlist(wave,10,11), missing
+foreach i in r s{
+tab `i'alzhe `i'demen if inlist(wave,10,11), missing
+gen `i'alzdem_sr=1 if `i'alzhe==1 | `i'demen==1
+replace `i'alzdem_sr=0 if `i'alzhe==0 & `i'demen==0
+tab `i'alzdem_sr if inlist(wave,10,11), missing
+}
 tab rcogtot ralzdem_sr  if inlist(wave,10,11)
 
 **self report memory related disease, question not asked in wave 3
 tab rmemry wave, missing //waves 3,10,11 had different variables
 tab rmemrye wave, missing
+tab smemry wave, missing //waves 3,10,11 had different variables
+tab smemrye wave, missing
 
 **combine self report memory disease + dementia + alzheimers to see if similar across waves
-gen sr_mem_dis_any=1 if ralzdem_sr==1
-replace sr_mem_dis_any=1 if rmemrye==1
-replace sr_mem_dis_any=0 if ralzdem_sr==0 & missing(sr_mem_dis_any)
-replace sr_mem_dis_any=0 if rmemrye==0 & missing(sr_mem_dis_any)
-
+foreach i in r s{
+gen `i'sr_mem_dis_any=1 if `i'alzdem_sr==1
+replace `i'sr_mem_dis_any=1 if `i'memrye==1
+replace `i'sr_mem_dis_any=0 if `i'alzdem_sr==0 & missing(`i'sr_mem_dis_any)
+replace `i'sr_mem_dis_any=0 if `i'memrye==0 & missing(`i'sr_mem_dis_any)
+}
 **possibly try to backfill with previous wave ever report for missings in 2010/2012?
-tab sr_mem_dis_any year, missing
+tab rsr_mem_dis_any year, missing
+tab ssr_mem_dis_any year, missing
 
 **dementia probability 1998-2006 waves only
 la var prob_dementia "Probability dementia +1 year from core, Hurd calculated"
@@ -158,8 +285,8 @@ sum prob_dementia if rproxy==1
 sum prob_dementia if rproxy==0
 sum prob_dementia if rcogimp_tics_ind==1
 sum prob_dementia if rcogimp_tics_ind==0
-sum prob_dementia if sr_mem_dis_any==1
-sum prob_dementia if sr_mem_dis_any==0
+sum prob_dementia if rsr_mem_dis_any==1
+sum prob_dementia if rsr_mem_dis_any==0
 
 gen prob_dem_gt50=1 if prob_dementia>=.5 & !missing(prob_dementia)
 replace prob_dem_gt50=0 if prob_dementia<.5 & !missing(prob_dementia)
@@ -176,12 +303,12 @@ replace prob_dem_gt90=0 if prob_dementia<.9 & !missing(prob_dementia)
 la var prob_dem_gt90 "Prob dementia > 90%"
 tab prob_dem_gt90, missing
 
-pwcorr prob_dementia prob_dem_gt50 rproxy rcogimp_tics_ind sr_mem_dis_any, sig
+pwcorr prob_dementia prob_dem_gt50 rproxy rcogimp_tics_ind rsr_mem_dis_any, sig
 
 ***********************************************
 
 **need to do Dementia probability imputations to get 2008-2012 waves included here!
-
+**see .do fiiles impute_dementia... for the imputations
 ***********************************************
 
 *****************************************************************************
@@ -192,50 +319,69 @@ tab rnrshom year, missing
 tab rnhmliv, missing
 tab rnrshom rnhmliv, missing //all that were in nh at time of ivw have yes for nh use variable
 
-gen sr_nh_ind = 1 if rnrshom==1
-replace sr_nh_ind = 0 if rnrshom==0
-la var sr_nh_ind "R Nursing home use last 2 years, self report"
-tab sr_nh_ind year, missing
+foreach i in r s{
+gen `i'sr_nh_ind = 1 if `i'nrshom==1
+replace `i'sr_nh_ind = 0 if `i'nrshom==0
+}
+la var rsr_nh_ind "R Nursing home use last 2 years, self report"
+tab rsr_nh_ind year, missing
+la var ssr_nh_ind "S Nursing home use last 2 years, self report"
+tab ssr_nh_ind year, missing
 
 **home care
-tab rhomcar year, missing
-gen sr_homecare_ind = 1 if rhomcar==1
-replace sr_homecare_ind = 0 if rhomcar==0
-replace sr_homecare_ind = 0 if rhomcar==.n //set to 0 if in nh at time of interview and question skipped
-la var sr_homecare_ind "R Home care last 2 years, self report"
-tab sr_homecare_ind year, missing
+foreach i in r s{
+tab `i'homcar year, missing
+gen `i'sr_homecare_ind = 1 if `i'homcar==1
+replace `i'sr_homecare_ind = 0 if `i'homcar==0
+replace `i'sr_homecare_ind = 0 if `i'homcar==.n //set to 0 if in nh at time of interview and question skipped
+}
+la var rsr_homecare_ind "R Home care last 2 years, self report"
+la var ssr_homecare_ind "S Home care last 2 years, self report"
+tab rsr_homecare_ind year, missing
+tab ssr_homecare_ind year, missing
 
-tab sr_nh_ind sr_homecare_ind, missing
+tab rsr_nh_ind rsr_homecare_ind, missing
 
 **long term care categorical variable
-gen r_sr_ltc_cat = 0 if sr_nh_ind==0&sr_homecare_ind==0
-replace r_sr_ltc_cat = 1 if sr_nh_ind==1&sr_homecare_ind==0
-replace r_sr_ltc_cat = 2 if sr_nh_ind==0&sr_homecare_ind==1
-replace r_sr_ltc_cat = 3 if sr_nh_ind==1&sr_homecare_ind==1
+foreach i in r s{
+gen `i'_sr_ltc_cat = 0 if `i'sr_nh_ind==0&`i'sr_homecare_ind==0
+replace `i'_sr_ltc_cat = 1 if `i'sr_nh_ind==1&`i'sr_homecare_ind==0
+replace `i'_sr_ltc_cat = 2 if `i'sr_nh_ind==0&`i'sr_homecare_ind==1
+replace `i'_sr_ltc_cat = 3 if `i'sr_nh_ind==1&`i'sr_homecare_ind==1
+}
 la def ltccat 0 "No LTC" 1 "Nursing home only" 2 "Home care only" 3 "Nursing home and home care"
-la val r_sr_ltc_cat ltccat
+la val r_sr_ltc_cat s_sr_ltc_cat ltccat
 la var r_sr_ltc_cat "R self report nh and/or home care"
+la var s_sr_ltc_cat "S self report nh and/or home care"
 tab r_sr_ltc_cat,missing
+tab s_sr_ltc_cat,missing
+tab r_sr_ltc_cat s_sr_ltc_cat, missing //see that these are symmetric - its because they are the same people!
 
 *****************************************************************************
 ** Control variables - demographics
 *****************************************************************************
 **age, use age at end of interview variable, per Rand codebook, when begin and end
 ** dates are different, most of the interview is at the end date (randhrs_0 page 118)
-sum ragey_e, detail
-gen rage_cat=0 if ragey_e<65 & !missing(ragey_e)
-replace rage_cat=1 if ragey_e>=65 & ragey_e<75
-replace rage_cat=2 if ragey_e>=75 & ragey_e<85
-replace rage_cat=3 if ragey_e>=85 & !missing(ragey_e)
-
+foreach i in r s{
+sum `i'agey_e, detail
+gen `i'age_cat=0 if `i'agey_e<65 & !missing(`i'agey_e)
+replace `i'age_cat=1 if `i'agey_e>=65 & `i'agey_e<75
+replace `i'age_cat=2 if `i'agey_e>=75 & `i'agey_e<85
+replace `i'age_cat=3 if `i'agey_e>=85 & !missing(`i'agey_e)
+}
 la def agecat 0"age <65" 1"age 65-74" 2"age 75-84" 3"age 85+"
-la val rage_cat agecat
+la val rage_cat sage_cat agecat
 la var rage_cat "R age at interview, years"
+la var sage_cat "S age at interview, years"
 tab rage_cat, missing
 sort rage_cat
 by rage_cat: sum ragey_e
 
-tab sr_mem_dis_any rage_cat, missing
+tab sage_cat, missing
+sort sage_cat
+by sage_cat: sum sagey_e
+
+tab rsr_mem_dis_any rage_cat, missing
 tab rcogimp_tics_ind rproxy if rage_cat==3, missing
 
 **gender
@@ -245,19 +391,36 @@ replace r_female_ind = 0 if ragender==1
 la var r_female_ind "R gender 1=female; 0=male"
 tab r_female_ind, missing
 
+tab sgender, missing
+gen s_female_ind = 1 if sgender==2
+replace s_female_ind = 0 if sgender==1
+la var s_female_ind "S gender 1=female; 0=male"
+tab s_female_ind, missing
+
+tab r_female_ind s_female_ind , missing
+
 **race,ethnicity
 tab raracem rahispan, missing
 gen r_race_eth_cat = 0 if raracem==1 & rahispan==0
 replace r_race_eth_cat = 1 if raracem==2 & rahispan==0
 replace r_race_eth_cat = 2 if rahispan==1
 replace r_race_eth_cat = 3 if raracem==3 & rahispan==0
+
+tab sracem shispan, missing
+gen s_race_eth_cat = 0 if sracem==1 & shispan==0
+replace s_race_eth_cat = 1 if sracem==2 & shispan==0
+replace s_race_eth_cat = 2 if shispan==1
+replace s_race_eth_cat = 3 if sracem==3 & shispan==0
+
 la def raceethcat 0 "White non-Hispanic" 1 "Black non-Hispanic" 2"Hispanic" 3"Other non-Hispanic"
 la var r_race_eth_cat "R Race/Ethnicity"
-la val r_race_eth_cat raceethcat
-tab r_race_eth_cat, missing
+la var s_race_eth_cat "S Race/Ethnicity"
+la val r_race_eth_cat s_race_eth_cat raceethcat
+tab r_race_eth_cat s_race_eth_cat, missing
 
 **education
 tab raeduc, missing
+//tab seduc, missing ** add s education !!
 
 **income and assets
 **note income and assets quintiles calculated separately for each wave
@@ -344,18 +507,28 @@ tab hchildnearby year,missing
 ** missing for 2010 data, manually do this for 2012?
 tab rhlpadlkn year, missing //number children help with adls
 tab rhlpiadlkn year, missing //number of children help with iadls 
+tab shlpadlkn year, missing //number children help with adls
+tab shlpiadlkn year, missing //number of children help with iadls 
 
-gen rhlpadlk_ind=1 if rhlpadlkn>0 & !missing(rhlpadlkn)
-replace rhlpadlk_ind=0 if rhlpadlkn==0 & !missing(rhlpadlkn)
-gen rhlpiadlk_ind=1 if rhlpiadlkn>0 & !missing(rhlpiadlkn)
-replace rhlpiadlk_ind=0 if rhlpiadlkn==0 & !missing(rhlpiadlkn)
-la var rhlpadlk_ind "Adult child helps with ADLs 1=yes"
-la var rhlpiadlk_ind "Adult child helps with IADLs 1=yes"
+foreach i in r s{
+gen `i'hlpadlk_ind=1 if `i'hlpadlkn>0 & !missing(`i'hlpadlkn)
+replace `i'hlpadlk_ind=0 if `i'hlpadlkn==0 & !missing(`i'hlpadlkn)
+gen `i'hlpiadlk_ind=1 if `i'hlpiadlkn>0 & !missing(`i'hlpiadlkn)
+replace `i'hlpiadlk_ind=0 if `i'hlpiadlkn==0 & !missing(`i'hlpiadlkn)
+}
+la var rhlpadlk_ind "Adult child helps R with ADLs 1=yes"
+la var rhlpiadlk_ind "Adult child helps R with IADLs 1=yes"
+la var shlpadlk_ind "Adult child helps S with ADLs 1=yes"
+la var shlpiadlk_ind "Adult child helps S with IADLs 1=yes"
 
-gen rhlp_adl_or_iadl_k_ind=1 if rhlpadlk_ind==1 | rhlpiadlk_ind==1
-replace rhlp_adl_or_iadl_k_ind=0 if rhlpadlk_ind==0 & rhlpiadlk_ind==0
-la var rhlp_adl_or_iadl_k_ind "Adult child helps with ADL/IADL 1=yes"
+foreach i in r s {
+gen `i'hlp_adl_or_iadl_k_ind=1 if `i'hlpadlk_ind==1 | `i'hlpiadlk_ind==1
+replace `i'hlp_adl_or_iadl_k_ind=0 if `i'hlpadlk_ind==0 & `i'hlpiadlk_ind==0
+}
+la var rhlp_adl_or_iadl_k_ind "Adult child helps R with ADL/IADL 1=yes"
+la var shlp_adl_or_iadl_k_ind "Adult child helps S with ADL/IADL 1=yes"
 tab rhlp_adl_or_iadl_k_ind year if hanychild>0 & !missing(hanychild), missing
+tab shlp_adl_or_iadl_k_ind year if hanychild>0 & !missing(hanychild), missing
 
 *****************************************************************************
 ** Health insurance
@@ -363,19 +536,27 @@ tab rhlp_adl_or_iadl_k_ind year if hanychild>0 & !missing(hanychild), missing
 
 tab rgovmr, missing //medicare
 tab rgovmd, missing //medicaid
+tab sgovmd, missing //medicaid
 tab rgovva, missing //va insurance
 tab rhiltc, missing //ltc insurance
 tab rhiothp, missing //other insurance (not employer or government)
 
-gen rmedicaid_sr = 1 if rgovmd==1
-replace rmedicaid_sr = 0 if rgovmd==0
+foreach i in r s{
+gen `i'medicaid_sr = 1 if `i'govmd==1
+replace `i'medicaid_sr = 0 if `i'govmd==0
+gen `i'medicaid_sr_missing = 1 if inlist(`i'govmd,.d,.m,.r)
+replace `i'medicaid_sr_missing = 0 if inlist(`i'govmd,0,1)
+}
+
 la var rmedicaid_sr "R Medicaid, self report"
-gen rmedicaid_sr_missing = 1 if inlist(rgovmd,.d,.m,.r)
-replace rmedicaid_sr_missing = 0 if inlist(rgovmd,0,1)
 la var rmedicaid_sr_missing "R Medicaid missing indicator 1=missing"
+la var smedicaid_sr "S Medicaid, self report"
+la var smedicaid_sr_missing "S Medicaid missing indicator 1=missing"
 tab rmedicaid_sr rmedicaid_sr_missing, missing
+tab smedicaid_sr smedicaid_sr_missing, missing
 
 tab rage_cat rmedicaid_sr, missing
+tab sage_cat smedicaid_sr, missing
 
 *****************************************************************************
 ** Medical diagnoses
@@ -385,23 +566,24 @@ tab rage_cat rmedicaid_sr, missing
 * 4=disputes previous record and no condition coded as 0
 * 5=disputes previous record and dk if condition coded as missing
 local dis hibp diab cancr lung heart strok psych arthr  
-
-foreach v in `dis'{
-tab r`v',missing
-gen r`v'_sr=1 if r`v'==1
-replace r`v'_sr=0 if r`v'==0
-replace r`v'_sr=1 if r`v'==3
-replace r`v'_sr=0 if r`v'==4
-tab r`v'_sr, missing
-}
+foreach i in r s{
+	foreach v in `dis'{
+		tab `i'`v',missing
+		gen `i'`v'_sr=1 if `i'`v'==1
+		replace `i'`v'_sr=0 if `i'`v'==0
+		replace `i'`v'_sr=1 if `i'`v'==3
+		replace `i'`v'_sr=0 if `i'`v'==4
+		tab `i'`v'_sr, missing
+		}
 
 * Stroke has additional option 2=TIA/possible stroke, count this as stroke
-replace rstrok_sr=1 if rstrok==2
-tab rstrok_sr, missing
+replace `i'strok_sr=1 if `i'strok==2
+tab `i'strok_sr, missing
 
 * Heart disease has item for had problem before elderly; doesn't have problem now
-replace rheart_sr=0 if rheart==6
-tab rheart_sr,missing
+replace `i'heart_sr=0 if `i'heart==6
+tab `i'heart_sr,missing
+	}
 
 la var rhibp_sr "R dx high blood pressure, self report"
 la var rdiab_sr "R dx diabetes, self report"
@@ -411,6 +593,15 @@ la var rheart_sr "R dx heart disease, self report"
 la var rstrok_sr "R dx stroke / tia, self report"
 la var rpsych_sr "R dx psychiatric condition, self report"
 la var rarthr_sr "R dx arthritis, self report"
+
+la var shibp_sr "S dx high blood pressure, self report"
+la var sdiab_sr "S dx diabetes, self report"
+la var scancr_sr "S dx cancer, self report"
+la var slung_sr "S dx lung disease, self report"
+la var sheart_sr "S dx heart disease, self report"
+la var sstrok_sr "S dx stroke / tia, self report"
+la var spsych_sr "S dx psychiatric condition, self report"
+la var sarthr_sr "S dx arthritis, self report"
 
 ******************************************************************************
 

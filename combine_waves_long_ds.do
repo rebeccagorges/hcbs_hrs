@@ -4,6 +4,9 @@
 **Converts dataset from wide to long format so final ds has one row per core interview
 **Final dataset is saved as rand_waves3to11.dta
 
+
+**rev 4/21 added s education variable
+
 capture log close
 clear all
 set more off
@@ -28,7 +31,7 @@ keep *hhidpn *hhid pn *cohort *cohbyr inw* *iwstat *cendiv *wtresp *wtr_nh * *sh
  *cesd *cesdm *walkr *walkrh *walkre *dress *dressh *bath *bathh *eat *eath ///
 *bed *bedh *bede *toilt *toilth *walkra *dressa *batha *eata *beda *toilta ///
 *adla *adlwa *map *phone *money *meds *shop *meals *mapa *phonea *moneya ///
-*medsa *shopa *mealsa *iadla *iadlza *bmi *oopmd *lbrf *retemp *unemp *jhours *jhour2 *hosp *hspnit ///
+*medsa *shopa *mealsa *iadla *iadlza *bmi *oopmd *lbrf *retemp *unemp *jhours *jhour2 *hosp *hspnit *hsptim ///
 *memry *memryq *memrye *memryf *alzhe *demen *memrys *slfmem *fslfme *pstmem *fpstme ///
 *nrshom *nrsnit *nhmliv *nhmday *homcar ///
 *byear *bmonth *bflag *bdate *dyear *dmonth *ddate *nyear *nmonth *ndate *iyear ///
@@ -36,7 +39,7 @@ keep *hhidpn *hhid pn *cohort *cohbyr inw* *iwstat *cendiv *wtresp *wtr_nh * *sh
 *agem_b *agey_b *agey_b *agem_e *agey_e ///
 *gender ///
 *racem *hispan *mstat *mpart *mcurln *child *livsib *evbrn *hhres ///
-*itot *atota raeduc *wthh *proxy *iwbeg ///
+*itot *atota *educ *wthh *proxy *iwbeg ///
 *iwbegf *iwend *iwendf *iwmid *iwmidf *iwendm *iwendy ///
 *higov *govmr *govmd *govva *covr *covs *henum *hiothp *hiltc *tyltc  ///
 *hibp *diab *cancr *lung *heart *strok *psych *arthr ///
@@ -65,7 +68,7 @@ hacohort racohbyr s`i'cohbyr ///
  *`i'toilth *`i'walkra *`i'dressa *`i'batha *`i'eata *`i'beda *`i'toilta ///
 *`i'adla *`i'adlwa *`i'map *`i'phone *`i'money *`i'meds *`i'shop *`i'meals ///
 *`i'mapa *`i'phonea *`i'moneya *`i'medsa *`i'shopa *`i'mealsa *`i'iadla ///
-*`i'iadlza *`i'bmi *`i'oopmd *`i'lbrf *`i'retemp *`i'unemp *`i'jhours *`i'jhour2 *`i'hosp *`i'hspnit ///
+*`i'iadlza *`i'bmi *`i'oopmd *`i'lbrf *`i'retemp *`i'unemp *`i'jhours *`i'jhour2 *`i'hosp *`i'hspnit *`i'hsptim ///
 *`i'slfmem *`i'fslfme *`i'pstmem *`i'fpstme  ///
 *`i'nrshom *`i'nrsnit r`i'nhmliv s`i'nhmliv *`i'nhmday *`i'homcar rabyear rabmonth ///
 rabflag rabdate radyear radmonth raddate ranyear ranmonth randate raiyear ///
@@ -77,7 +80,7 @@ s`i'imonth s`i'idate s`i'ndatef s`i'idatef ///
 ragender raracem rahispan ///
 s`i'gender s`i'racem s`i'hispan ///
 *`i'mstat *`i'mpart *`i'mcurln *`i'child *`i'livsib raevbrn s`i'evbrn *`i'hhres ///
-h`i'itot h`i'atota raeduc *`i'proxy *`i'iwbeg ///
+h`i'itot h`i'atota raeduc s`i'educ *`i'proxy *`i'iwbeg ///
 *`i'iwbegf *`i'iwend *`i'iwendf *`i'iwmid *`i'iwmidf *`i'iwendm *`i'iwendy ///
 *`i'higov *`i'govmr *`i'govmd *`i'govva *`i'covr *`i'covs *`i'henum *`i'hiothp *`i'hiltc *`i'tyltc ///
 *`i'hibp *`i'diab *`i'cancr *`i'lung *`i'heart *`i'strok *`i'psych *`i'arthr  ///
@@ -95,7 +98,7 @@ local rsvars iwstat cendiv wtresp shlt hlthlm depres effort sleepr whappy flone 
  cesd cesdm walkr walkrh walkre dress dressh bath bathh eat eath ///
  bed bedh bede toilt toilth walkra dressa batha eata beda toilta ///
 adla adlwa map phone money meds shop meals mapa phonea moneya ///
-medsa shopa mealsa iadla iadlza bmi oopmd lbrf retemp unemp jhours jhour2 hosp hspnit ///
+medsa shopa mealsa iadla iadlza bmi oopmd lbrf retemp unemp jhours jhour2 hosp hspnit hsptim ///
 slfmem fslfme pstmem fpstme  ///
 nrshom nrsnit nhmliv nhmday homcar agem_b agey_b agem_e agey_e ///
 mstat mpart mcurln  livsib   proxy iwbeg ///
@@ -115,7 +118,7 @@ foreach v in r s {
 	
 **rename spouse only variables
 local svars hhidpn cohbyr byear bmonth bflag bdate dyear dmonth ddate nyear nmonth ndate iyear ///
-imonth idate ndatef idatef gender racem hispan evbrn 
+imonth idate ndatef idatef gender racem hispan evbrn educ
 
 foreach name in `svars' {
 	rename s`i'`name' s`name'
