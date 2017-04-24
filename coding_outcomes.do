@@ -420,7 +420,7 @@ tab r_race_eth_cat s_race_eth_cat, missing
 
 **education
 tab raeduc, missing
-//tab seduc, missing ** add s education !!
+tab seduc, missing 
 
 **income and assets
 **note income and assets quintiles calculated separately for each wave

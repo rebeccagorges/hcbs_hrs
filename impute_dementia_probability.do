@@ -31,7 +31,7 @@ sort hhid pn year
 
 merge 1:1 hhid pn year using proxycog_allyrs2.dta
 tab _merge rproxy, missing
-tab year _merge if rproxy==1 & age_lt_65==0
+tab year _merge if rproxy==1 & rage_lt_65==0
 drop _merge
 
 sum iqmean if rproxy==1
@@ -42,11 +42,11 @@ replace iqmean=. if rproxy==0
 **how many obs do not have TICS or IQCODE?
 gen iqcode_missing=0
 replace iqcode_missing=1 if missing(iqmean)
-tab iqcode_missing age_lt_65 if rproxy==1, missing
+tab iqcode_missing rage_lt_65 if rproxy==1, missing
 
 gen cog_missing=0
 replace cog_missing=1 if iqcode_missing==1 & tics_missing==1
-tab rproxy cog_missing if age_lt_70==0 & wave>3
+tab rproxy cog_missing if rage_lt_70==0 & wave>3
 
 **********************************************************************************
 ** Merge in ADAMS diagnosis **
@@ -62,40 +62,40 @@ tab r_female_ind, missing
 tab ragey_e, missing
 tab rage_cat, missing
 
-gen age_cat2=1 if ragey_e<70 & !missing(ragey_e)
-replace age_cat2=2 if ragey_e>=70  & !missing(ragey_e)
-replace age_cat2=3 if ragey_e>=75 & !missing(ragey_e)
-replace age_cat2=4 if ragey_e>=80 & !missing(ragey_e)
-replace age_cat2=5 if ragey_e>=85 & !missing(ragey_e)
-replace age_cat2=6 if ragey_e>=90 & !missing(ragey_e)
-tab age_cat2, gen(age_cat2_ind)
+gen rage_cat2=1 if ragey_e<70 & !missing(ragey_e)
+replace rage_cat2=2 if ragey_e>=70  & !missing(ragey_e)
+replace rage_cat2=3 if ragey_e>=75 & !missing(ragey_e)
+replace rage_cat2=4 if ragey_e>=80 & !missing(ragey_e)
+replace rage_cat2=5 if ragey_e>=85 & !missing(ragey_e)
+replace rage_cat2=6 if ragey_e>=90 & !missing(ragey_e)
+tab rage_cat2, gen(rage_cat2_ind)
 label define age_cat2 1 "Age<70" 2 "Age 70-74" 3 "Age 75-79" 4 "Age 80-84" ///
 5 "Age 85-89" 6 "Age>=90"
-label values age_cat2 age_cat2
-tab age_cat2, missing
-tab age_cat2 if !missing(dx) & rproxy==1, missing
+label values rage_cat2 age_cat2
+tab rage_cat2, missing
+tab rage_cat2 if !missing(dx) & rproxy==1, missing
 
 tab raeduc,missing
 
-gen ed_hs_only=0 if !missing(raeduc)
-replace ed_hs_only=1 if raeduc==3 | raeduc==2 //includes GED
-tab ed_hs_only, missing
-tab ed_hs_only if !missing(dx) & rproxy==1, missing
+gen r_ed_hs_only=0 if !missing(raeduc)
+replace r_ed_hs_only=1 if raeduc==3 | raeduc==2 //includes GED
+tab r_ed_hs_only, missing
+tab r_ed_hs_only if !missing(dx) & rproxy==1, missing
 
-gen ed_gt_hs=raeduc>3 if !missing(raeduc)
-tab ed_gt_hs raeduc, missing
+gen r_ed_gt_hs=raeduc>3 if !missing(raeduc)
+tab r_ed_gt_hs raeduc, missing
 
-la var ed_hs_only "High school education level indicator (includes GED)"
-la var ed_gt_hs "GT high school educ level indicator"
+la var r_ed_hs_only "High school education level indicator (includes GED)"
+la var r_ed_gt_hs "GT high school educ level indicator"
 
 tab radla, missing
 tab radla if !missing(dx) & rproxy==1, missing
 
-la var radla "Some difficulty with ADLs, count"
+la var radla "R Some difficulty with ADLs, count"
 
 tab riadlza, missing
 tab riadlza if !missing(dx) & rproxy==1, missing
-la var riadlza "Some difficulty with IADLs, count"
+la var riadlza "R Some difficulty with IADLs, count"
 
 sum iqmean, detail
 sum iqmean if !missing(dx) & rproxy==1, detail
@@ -200,8 +200,8 @@ for a given interview)
 3. missiqscore=no t-2 HRS IQSCORE, proxy interview 
 4. also, for clarity, using variable prevrproxy instead of ch_rproxy to match Hurd paper 
 (they are the same thing though) */
-local bothvars age_cat2_ind3 age_cat2_ind4 age_cat2_ind5 age_cat2_ind6 ///
-ed_hs_only ed_gt_hs r_female_ind radla riadlza ch_radla ch_riadlza missradla missriadlza
+local bothvars rage_cat2_ind3 rage_cat2_ind4 rage_cat2_ind5 rage_cat2_ind6 ///
+r_ed_hs_only r_ed_gt_hs r_female_ind radla riadlza ch_radla ch_riadlza missradla missriadlza
 
 local regvars rdates rbwc20 rser7 rscis rcact rpres rimrc rdlrc ///
 ch_rdates ch_rbwc20 ch_rser7 ch_rscis ch_rcact ch_rpres ///
