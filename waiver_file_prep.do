@@ -16,11 +16,11 @@ cd `data'
 **file with target population data, originally in wide format
 
 **will merge just on state and waiver number
-import excel using `data'/waivers/State_Plans_Waivers_rcd_11_22_16.xlsx, ///
-firstrow case(l) sheet("waivers codes") 
+import excel using `data'/waivers/waivers_merged_lw_20170404.xlsx, ///
+firstrow case(l) sheet("Sheet1") 
 
 drop if state==""
-drop if wvrnum==.
+drop if wvrnum==""
 
 sort state wvrnum
 quietly by state wvrnum :  gen dup = cond(_N==1,0,_n)
@@ -39,7 +39,7 @@ rename braininjurybi pop_8
 rename hivaids pop_9
 rename pregnantwomen pop_10
 rename children pop_11
-rename elderlyorage65or60 pop_12
+rename elderlyage60or65 pop_12
 rename notspecifiedadultsgeneralpo pop_13
 
 la var pop_1 "Intellectual Disabilities (ID)/ Mental Retardation (MR)"
@@ -70,9 +70,6 @@ rename o y2010
 rename p y2012
 rename q y2014
 
-rename wvrnum wvrnum_numeric
-gen wvrnum = string(wvrnum)
-
 sort state wvrnum
 
 **save a version with all data fields
@@ -90,7 +87,6 @@ save hcbs_waivers_all_raw.dta, replace
 */
 use hcbs_waivers_all_raw.dta, clear
 destring year ,replace
-destring wvrnum, replace
 forvalues i=1/169{
 destring scode`i',replace
 }
@@ -105,7 +101,6 @@ gen year2=year(enddate2)
 rename title waivertitle
 
 **merge population served data into main waiver data file
-keep state wvrnum year begdate enddate waivertitle begdate2 enddate2 year2
 sort state wvrnum
 merge m:1 state wvrnum using hcbs_waiver_targetpop_raw_full.dta
 
@@ -120,19 +115,117 @@ la def merge 1 "HCBS_wavers_all sheet only" 2 " State_plans_waivers only" ///
 la val merge merge_info 
 la var merge_info "waivers merge status"
 
-**now get a version with just missing waivers, formatted to the population
-**data State_Plans_Waivers format
-keep if merge_info==1
-
 **need to check/clean up typos in the year data
 tab year2, missing
+
+li wvrnum year begdate2 enddate2 state waivertitle if year2==1930
+replace enddate2=td(30jun2020) if wvrnum=="383" & enddate2==td(30jun1930)
+replace year2=2020 if wvrnum=="383" & enddate2==td(30jun2020)
+
 **drop if before 1992; there were some systematic errors with date coding 1988-1992
 **since we aren't using that period anyway, just drop them now
+li wvrnum year begdate2 enddate2 state waivertitle if year2<1992
 drop if year2<1992
 
-**need to address this!
-li state wvrnum waivertitle begdate enddate if year2==.
+li wvrnum year begdate2 enddate2 begdate enddate state waivertitle if year2>2020 & !missing(year2)
 
+**fix dates for waiver TBI in MA
+li wvrnum year2 begdate2 enddate2 year begdate enddate state if waivertitle=="TBI" & state=="MA"
+replace enddate2=td(01jul2016) if year==16 & waivertitle=="TBI" & state=="MA"
+replace year2=2016 if year==16 & waivertitle=="TBI" & state=="MA"
+replace enddate2=td(01jul2017) if year==17 & waivertitle=="TBI" & state=="MA"
+replace year2=2017 if year==17 & waivertitle=="TBI" & state=="MA"
+replace enddate2=td(01jul2018) if year==18 & waivertitle=="TBI" & state=="MA"
+replace year2=2018 if year==18 & waivertitle=="TBI" & state=="MA"
+replace enddate2=td(01jul2019) if year==19 & waivertitle=="TBI" & state=="MA"
+replace year2=2019 if year==19 & waivertitle=="TBI" & state=="MA"
+li wvrnum year2 begdate2 enddate2 year begdate enddate state if waivertitle=="TBI" & state=="MA"
+
+li wvrnum year2 begdate2 enddate2 year begdate enddate state waivertitle if year2>2020 & !missing(year2)
+**fix one off errors
+replace enddate2=td(30jun1999) if enddate2==td(01jun3099) & waivertitle=="A/D" & state=="ME"
+replace year2=1999 if enddate2==td(30jun1999) & waivertitle=="A/D" & state=="ME"
+
+replace enddate2=td(31oct2014) if enddate2==td(01oct3114) & wvrnum=="842" & state=="ND"
+replace year2=2014 if enddate2==td(31oct2014) & wvrnum=="842" & state=="ND"
+
+replace enddate2=td(30jun2016) if enddate2==td(01jun3016 ) & wvrnum=="40194" & state=="OR"
+replace year2=2016 if enddate2==td(30jun2016) & wvrnum=="40194" & state=="OR"
+li wvrnum year2 begdate2 enddate2 year begdate enddate state waivertitle if year2>2020 & !missing(year2)
+
+**missing year2 fields?
+
+**need to address this! these waivers had no end date!
+li state wvrnum waivertitle begdate enddate merge_info if year2==.
+
+li state wvrnum waivertitle begdate enddate year pop_1 pop_12 merge_info if wvrnum=="68.90000000000001"
+li state wvrnum waivertitle begdate enddate year pop_1 pop_12 merge_info if wvrnum=="68"
+drop if wvrnum=="68" & merge_info==2
+
+**These notes wrt spreadsheet missing_to_add_manually.xlsx
+**If get new versions of spreadsheets need to revisit this work!!
+**AL waiver 878 exists, was not in the original master list! manually add entries
+**CT waiver 1085 to be manually added
+**FL 10 - Its waiver 10.9 in the other spreadsheet; added addl entries for 2011-2014
+
+replace enddate2=td(28feb2001) if year2==. & wvrnum=="40195" & state=="HI"
+replace year2=2001 if year2==. & wvrnum=="40195" & state=="HI"
+
+li state wvrnum waivertitle enddate merge_info pop_1 pop_12 if state=="ME" & (wvrnum=="275" | wvrnum=="276")
+
+replace pop_2=1 if state=="ME" & wvrnum=="276"
+replace pop_3=1 if state=="ME" & wvrnum=="276"
+replace pop_6=0 if state=="ME" & wvrnum=="276"
+replace pop_12=1 if state=="ME" & wvrnum=="276"
+
+drop if state=="ME" & wvrnum=="275" & merge_info==2
+
+drop if state=="MT" & wvrnum=="44" & merge_info==2
+
+drop if state=="ND" & wvrnum=="273" & year==95
+
+drop if state=="NH" & wvrnum=="53.9" & year==92
+
+drop if state=="NJ" & wvrnum=="160" & year==92
+
+replace enddate2=td(28feb2001) if year2==. & wvrnum=="160" & state=="NJ" & begdate2==td(01mar2000)
+replace year2=2001 if year2==. & wvrnum=="160" & state=="NJ" & begdate2==td(01mar2000)
+replace enddate2=td(28feb2007) if year2==. & wvrnum=="160" & state=="NJ" & begdate2==td(01mar2006)
+replace year2=2007 if year2==. & wvrnum=="160" & state=="NJ" & begdate2==td(01mar2006)
+
+drop if state=="NV" & wvrnum=="125" & merge_info==2
+drop if state=="NV" & wvrnum=="152" & merge_info==2
+drop if state=="NV" & wvrnum=="4150" & merge_info==2
+
+drop if state=="NY" & wvrnum=="238" & year==92
+
+replace enddate2=td(30jun1998) if year2==. & wvrnum=="198" & state=="OH" & year==98
+replace begdate2=td(01jul1998) if year2==. & wvrnum=="198" & state=="OH" & year==98
+replace year2=1998 if year2==. & wvrnum=="198" & state=="OH" & year==98
+
+drop if state=="OH" & wvrnum=="218" & year==92 & year2==.
+
+drop if state=="OH" & wvrnum=="4169" & merge_info==2 & year2==.
+
+**OH OBRA - don't know what this one is!
+
+drop if state=="OK" & wvrnum=="9" & merge_info==2 & year2==.
+replace enddate2=td(30jun2018) if state=="SC" & wvrnum=="284" & year==18
+replace year2=2018 if state=="SC" & wvrnum=="284" & year==18
+
+replace enddate2=td(30jun2017) if state=="SC" & wvrnum=="284" & year==17
+replace year2=2017 if state=="SC" & wvrnum=="284" & year==17
+
+replace enddate2=td(30jun2016) if state=="SC" & wvrnum=="284" & year==16
+replace year2=2016 if state=="SC" & wvrnum=="284" & year==16
+
+replace enddate2=td(30jun2015) if state=="SC" & wvrnum=="284" & year==15
+replace year2=2015 if state=="SC" & wvrnum=="284" & year==15
+
+replace enddate2=td(30jun2014) if state=="SC" & wvrnum=="284" & year==14
+replace year2=2014 if state=="SC" & wvrnum=="284" & year==14
+
+/*
 **collapse so one entry per waiver
 by state wvrnum : egen begdate3=min(begdate2)
 by state wvrnum : egen enddate3=max(enddate2)

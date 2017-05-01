@@ -62,6 +62,31 @@ gen home_care_ind=0 if r_sr_ltc_cat2==1 //nh only
 replace home_care_ind=1 if inlist(r_sr_ltc_cat2,2,3) //home care only + home care + nh
 tab r_sr_ltc_cat2 home_care_ind , missing
 
+**limit sample to adl or iadl difficulty - look at ltss use
+tab radlimpair, missing
+tab r_sr_ltc_cat2 radlimpair, missing
+
+mat tadl=J(2,4,.)
+tab r_sr_ltc_cat2 if radlimpair==1 & sampleyear_ind==1, matcell(hc)
+mat tadl[1,1]=hc[1,1]/r(N)*100
+mat tadl[1,2]=hc[2,1]/r(N)*100
+mat tadl[1,3]=hc[3,1]/r(N)*100
+mat tadl[1,4]=hc[4,1]/r(N)*100
+
+tab r_sr_ltc_cat2 if radlimpair==0 & sampleyear_ind==1, matcell(hc)
+mat tadl[2,1]=hc[1,1]/r(N)*100
+mat tadl[2,2]=hc[2,1]/r(N)*100
+mat tadl[2,3]=hc[3,1]/r(N)*100
+mat tadl[2,4]=hc[4,1]/r(N)*100
+
+mat rownames tadl= "ADL or IADL difficulty" "No functional limit"
+
+frmttable , statmat(tadl) store(tadl1) sdec(2)
+
+outreg using `logpath'/disparities_tables1.doc, replace ///
+replay(tadl1) ///
+ctitles("","No LTC", "Nursing home only" , "Home care only" , "NH + HC") ///
+title("LTSS use by Functional status, %")
 
 **********************************************************
 **Outcomes summary stats
@@ -191,7 +216,7 @@ frmttable , statmat(t1) store(table1) sdec(0,2,0,2,0,2) varlabels substat(1)
 outreg , replay(table1a) append(table1) store(table1a)
 
 
-outreg using `logpath'/disparities_tables1, replace ///
+outreg using `logpath'/disparities_tables1, addtable ///
 replay(table1a) landscape title("Outcomes summary statistics") ///
 ctitles("","Overall","","","Nursing home","","Home care only","" \ ///
 "","N","Mean","N","Mean","N","Mean" ) ///
@@ -394,6 +419,160 @@ note("HRS 1998-2012 waves, subsample receiving long-term care" \ ///
 "Home care includes those home care only and also both home care and nursing home care" \ ///
 "$^1$ lagged value - response from previous interview") 
 
+**********************************************************
+**LTC by race
+**********************************************************
+tab r_race_eth_cat r_sr_ltc_cat2 , missing
+tab r_race_eth_cat r_sr_ltc_cat2
+
+tab r_race_eth_cat if !missing(r_sr_ltc_cat2) & r_race_eth_cat!=3  & sampleyear_ind==1, matcell(hcr1)
+mat list hcr1
+
+frmttable , statmat(hcr1) store(hcr1_n) sdec(0)
+
+mat trace=J(3,4,.)
+tab r_sr_ltc_cat2 if r_race_eth_cat==0  & sampleyear_ind==1, matcell(hcr)
+mat trace[1,1]=hcr[1,1]/r(N)*100
+mat trace[1,2]=hcr[2,1]/r(N)*100
+mat trace[1,3]=hcr[3,1]/r(N)*100
+mat trace[1,4]=hcr[4,1]/r(N)*100
+
+tab r_sr_ltc_cat2 if r_race_eth_cat==1  & sampleyear_ind==1, matcell(hcr)
+mat trace[2,1]=hcr[1,1]/r(N)*100
+mat trace[2,2]=hcr[2,1]/r(N)*100
+mat trace[2,3]=hcr[3,1]/r(N)*100
+mat trace[2,4]=hcr[4,1]/r(N)*100
+
+tab r_sr_ltc_cat2 if r_race_eth_cat==2  & sampleyear_ind==1, matcell(hcr)
+mat trace[3,1]=hcr[1,1]/r(N)*100
+mat trace[3,2]=hcr[2,1]/r(N)*100
+mat trace[3,3]=hcr[3,1]/r(N)*100
+mat trace[3,4]=hcr[4,1]/r(N)*100
+
+mat rownames trace= "White" "Black" "Hispanic"
+
+frmttable , statmat(trace) store(trace1) sdec(2)
+
+outreg using `logpath'/disparities_tables1.doc, addtable ///
+replay(hcr1_n) merge(trace1) ///
+ctitles("","N","No LTC", "Nursing home only" , "Home care only" , "NH + HC") ///
+title("LTSS use by Race and Ethnicity Categories , %") ///
+note("Other race category ommitted" \ ///
+"Chi-squared test of equal ltss by race categories: p<0.001")
+
+tab r_race_eth_cat r_sr_ltc_cat2 if r_sr_ltc_cat2!=0 & r_race_eth_cat!=3 & sampleyear_ind==1, chi
+
+***********************************************************
+***********************************************************
+reg rhosp i.r_race_eth_cat#i.home_care_ind if sampleltc_ind==1 & sampleyear_ind==1 & r_race_eth_cat!=3
+
+**table of outcomes by race category and hc use
+matrix t1=J(1,12,.)
+local v rhosp
+	tab `v' if sampleltc_ind==1 & sampleyear_ind==1, missing
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1
+	mat t1[1,1]=r(N)
+	mat t1[1,3]=r(mean)*100
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind== & **add race/ethn cat here
+	mat t1[1,5]=r(N)
+	mat t1[1,7]=r(mean)*100
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==1
+	mat t1[1,9]=r(N)
+	mat t1[1,11]=r(mean)*100
+
+	mat rownames t1=`v'
+	mat list t1
+
+	frmttable , statmat(t1) store(table1) sdec(0,2,0,2,0,2) varlabels substat(1)
+	outreg , replay(table1a) append(table1) store(table1a)
+
+matrix t1=J(1,12,.)
+local v rhspnit
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1
+	mat t1[1,1]=r(N)
+	mat t1[1,3]=r(mean)
+	mat t1[1,4]=r(sd)
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==0
+	mat t1[1,5]=r(N)
+	mat t1[1,7]=r(mean)
+	mat t1[1,8]=r(sd)
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==1
+	mat t1[1,9]=r(N)
+	mat t1[1,11]=r(mean)
+	mat t1[1,12]=r(sd)
+
+	mat rownames t1=`v'
+	mat list t1
+	
+frmttable , statmat(t1) store(table1) sdec(0,2,0,2,0,2) varlabels substat(1)
+outreg , replay(table1a) append(table1) store(table1a)
+
+local tabvars rshlt_fp rhlthlm1 rbmi_not_normal adl_diff iadl_diff ///
+rdepres reffort rsleepr rwhappy rflone rfsad rgoing renlife rcesd_gt3 ///
+rlbrf1_ind1 rlbrf1_ind2 rlbrf1_ind3 
+		
+foreach v in `tabvars' {
+	matrix t1=J(1,12,.)
+	tab `v' if sampleltc_ind==1 & sampleyear_ind==1, missing
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1
+	mat t1[1,1]=r(N)
+	mat t1[1,3]=r(mean)*100
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==0
+	mat t1[1,5]=r(N)
+	mat t1[1,7]=r(mean)*100
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==1
+	mat t1[1,9]=r(N)
+	mat t1[1,11]=r(mean)*100
+
+	mat rownames t1=`v'
+	mat list t1
+
+	frmttable , statmat(t1) store(table1) sdec(0,2,0,2,0,2) varlabels substat(1)
+	outreg , replay(table1a) append(table1) store(table1a)
+
+}	
+
+matrix t1=J(1,12,.)
+local v rhours_worked
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1
+	mat t1[1,1]=r(N)
+	mat t1[1,3]=r(mean)
+	mat t1[1,4]=r(sd)
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==0
+	mat t1[1,5]=r(N)
+	mat t1[1,7]=r(mean)
+	mat t1[1,8]=r(sd)
+	
+	sum `v' if sampleltc_ind==1 & sampleyear_ind==1 & home_care_ind==1
+	mat t1[1,9]=r(N)
+	mat t1[1,11]=r(mean)
+	mat t1[1,12]=r(sd)
+
+	mat rownames t1=`v'
+	mat list t1
+	
+frmttable , statmat(t1) store(table1) sdec(0,2,0,2,0,2) varlabels substat(1)
+outreg , replay(table1a) append(table1) store(table1a)
+
+
+outreg using `logpath'/disparities_tables1, addtable ///
+replay(table1a) landscape title("Outcomes summary statistics") ///
+ctitles("","Overall","","","Nursing home","","Home care only","" \ ///
+"","N","Mean","N","Mean","N","Mean" ) ///
+note("HRS 1998-2012 waves, subsample receiving long-term care" \ ///
+"Nursing home only vs home care and home care and nursing home care" \ ///
+"Health limits worked = observation omitted if reports doesn't work" \ ///
+"Wave 7 health limits work assumed yes if yes previous wave - data problem")
+
+
+**table of characteristics (x variables) by race category and hc use
 
 
 ***********************************************************

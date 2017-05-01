@@ -1,7 +1,6 @@
 **Rebecca Gorges
 **September 2016
-**Cleans variables used for analysis for full dataset created in home_care.do
-
+**Cleans variables used for analysis for full dataset created in geo_data_merge.do
 
 capture log close
 clear all
@@ -27,7 +26,7 @@ la def pred_dem_cat 1 "Dementia" 2"CIND" 3"Normal"
 la val pred_dem_cat pred_dem_cat
  
 tab pred_dem_cat, missing
-tab sr_mem_dis_any , missing
+tab rsr_mem_dis_any , missing
 tab rcogimp_tics_ind, missing
 
 **indicators for dementia, cind categories
@@ -37,7 +36,7 @@ la var pred_dem_cat2 "Predicted CIND"
 la var pred_dem_cat3 "Predicted normal"
 
 tab pred_dem_cat1, missing
-tab sr_mem_dis_any , missing
+tab rsr_mem_dis_any , missing
 tab rcogimp_tics_ind, missing
 tab cog_missing rproxy, missing //cog_missing=1 if both iqcode and tics are missing
 tab iqcode_missing rproxy, missing
@@ -46,13 +45,13 @@ sum pdem if cog_missing==1, detail //probability dementia not calculated if cog 
 sum pdem if cog_missing==1 &rproxy==1, detail
 sum pdem if cog_missing==1 &rproxy==0, detail
 
-la var sr_mem_dis_any "Self report memory disease"
+la var rsr_mem_dis_any "R Self report memory disease"
 la var rcogimp_tics_ind "TICS score <8"
 
 //gen indicators for different tics cutoffs based on distr in sample
 //sample limited to age 70+, wave 1998 and later
 gen sample_criteria=0
-replace sample_criteria=1 if age_lt_70==0 & wave>3
+replace sample_criteria=1 if rage_lt_70==0 & wave>3
 tab sample_criteria, missing
 
 sum rcogtot if sample_criteria==1, detail
@@ -118,14 +117,14 @@ la var cog_comb3 "TICS score<50% or IQMEAN>50%"
 **************************************************************************
 **dementia indicators - using all 3 measures
 **first version, missing if missing any of the three measures
-gen dem_vars_cat=0 if sr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==0
-replace dem_vars_cat=1 if sr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==0
-replace dem_vars_cat=2 if sr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==0
-replace dem_vars_cat=3 if sr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==1
-replace dem_vars_cat=4 if sr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==0
-replace dem_vars_cat=5 if sr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==1
-replace dem_vars_cat=6 if sr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==1
-replace dem_vars_cat=7 if sr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==1
+gen dem_vars_cat=0 if rsr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==0
+replace dem_vars_cat=1 if rsr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==0
+replace dem_vars_cat=2 if rsr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==0
+replace dem_vars_cat=3 if rsr_mem_dis_any==0 & pred_dem_cat1==0 & cog_comb==1
+replace dem_vars_cat=4 if rsr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==0
+replace dem_vars_cat=5 if rsr_mem_dis_any==1 & pred_dem_cat1==0 & cog_comb==1
+replace dem_vars_cat=6 if rsr_mem_dis_any==0 & pred_dem_cat1==1 & cog_comb==1
+replace dem_vars_cat=7 if rsr_mem_dis_any==1 & pred_dem_cat1==1 & cog_comb==1
 
 la def dem_vars_cat 0 "No dementia" 1 "SR mem disease only" ///
 2 "Predicted dementia only" 3 "Cog score only" ///
@@ -139,12 +138,12 @@ tab dem_vars_cat, missing
 
 **second version, assigning to dementia ignoring missing
 gen dem_vars_cat2=dem_vars_cat
-replace dem_vars_cat2=1 if sr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & inlist(cog_comb,0,.)
-replace dem_vars_cat2=2 if inlist(sr_mem_dis_any,0,.) & pred_dem_cat1==1 & inlist(cog_comb,0,.)
-replace dem_vars_cat2=3 if inlist(sr_mem_dis_any,0,.) & inlist(pred_dem_cat1,0,.) & cog_comb==1
-replace dem_vars_cat2=4 if sr_mem_dis_any==1 & pred_dem_cat1==1 & inlist(cog_comb,0,.)
-replace dem_vars_cat2=5 if sr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & cog_comb==1
-replace dem_vars_cat2=6 if inlist(sr_mem_dis_any,0,.) & pred_dem_cat1==1 & cog_comb==1
+replace dem_vars_cat2=1 if rsr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & inlist(cog_comb,0,.)
+replace dem_vars_cat2=2 if inlist(rsr_mem_dis_any,0,.) & pred_dem_cat1==1 & inlist(cog_comb,0,.)
+replace dem_vars_cat2=3 if inlist(rsr_mem_dis_any,0,.) & inlist(pred_dem_cat1,0,.) & cog_comb==1
+replace dem_vars_cat2=4 if rsr_mem_dis_any==1 & pred_dem_cat1==1 & inlist(cog_comb,0,.)
+replace dem_vars_cat2=5 if rsr_mem_dis_any==1 & inlist(pred_dem_cat1,0,.) & cog_comb==1
+replace dem_vars_cat2=6 if inlist(rsr_mem_dis_any,0,.) & pred_dem_cat1==1 & cog_comb==1
 la val dem_vars_cat2 dem_vars_cat
 
 tab dem_vars_cat2, missing
@@ -165,19 +164,19 @@ tab r_sr_ltc_cat home_care_other_svc_ind,missing
 replace home_care_other_svc_ind=0 if rnhmliv==1 & missing(home_care_other_svc_ind)
 
 **alternate definition, medical care or other services at home
-gen r_sr_ltc_cat2 = 0 if sr_nh_ind==0&sr_homecare_ind==0&home_care_other_svc_ind==0
-replace r_sr_ltc_cat2 = 1 if sr_nh_ind==1&sr_homecare_ind==0&home_care_other_svc_ind==0
-replace r_sr_ltc_cat2 = 2 if sr_nh_ind==0&(sr_homecare_ind==1|home_care_other_svc_ind==1)
-replace r_sr_ltc_cat2 = 3 if sr_nh_ind==1&(sr_homecare_ind==1|home_care_other_svc_ind==1)
+gen r_sr_ltc_cat2 = 0 if rsr_nh_ind==0&rsr_homecare_ind==0&home_care_other_svc_ind==0
+replace r_sr_ltc_cat2 = 1 if rsr_nh_ind==1&rsr_homecare_ind==0&home_care_other_svc_ind==0
+replace r_sr_ltc_cat2 = 2 if rsr_nh_ind==0&(rsr_homecare_ind==1|home_care_other_svc_ind==1)
+replace r_sr_ltc_cat2 = 3 if rsr_nh_ind==1&(rsr_homecare_ind==1|home_care_other_svc_ind==1)
 //la def ltccat 0 "No LTC" 1 "Nursing home only" 2 "Home care only" 3 "Nursing home and home care"
 la val r_sr_ltc_cat2 ltccat
 la var r_sr_ltc_cat2 "R self report nh and/or home care, hc includes med and other services"
 tab r_sr_ltc_cat2,missing
 
 **finally, identify using helper file relationship/paid question also
-gen hc_any=0
-replace hc_any=1 if sr_homecare_ind==1 | home_care_other_svc_ind==1 | help_paid_comb_ind==1 | help_prof_comb==1
-la var hc_any "Home care, any of 4 variables"
+gen rhc_any=0
+replace rhc_any=1 if rsr_homecare_ind==1 | home_care_other_svc_ind==1 | help_paid_comb_ind==1 | help_prof_comb==1
+la var rhc_any "R Home care, any of 4 variables"
 
 la var help_prof_comb "Professional / organization ADL/IADL helper"
 
@@ -188,10 +187,10 @@ tab help_adl_prof_or_paid
 la var help_adl_prof_or_paid "ADL/IADL professional or paid helper"
 
 **3rd categorical variable using any of the 4 home care definitions
-gen r_sr_ltc_cat3=0 if sr_nh_ind==0 & hc_any==0
-replace r_sr_ltc_cat3=1 if sr_nh_ind==1 & hc_any==0
-replace r_sr_ltc_cat3=2 if sr_nh_ind==0 & hc_any==1
-replace r_sr_ltc_cat3=3 if sr_nh_ind==1 & hc_any==1
+gen r_sr_ltc_cat3=0 if rsr_nh_ind==0 & rhc_any==0
+replace r_sr_ltc_cat3=1 if rsr_nh_ind==1 & rhc_any==0
+replace r_sr_ltc_cat3=2 if rsr_nh_ind==0 & rhc_any==1
+replace r_sr_ltc_cat3=3 if rsr_nh_ind==1 & rhc_any==1
 la val r_sr_ltc_cat3 ltccat
 la var r_sr_ltc_cat3 "R self report nh and/or home care, hc includes med + other services + helper"
 tab r_sr_ltc_cat3,missing

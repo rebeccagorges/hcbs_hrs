@@ -32,10 +32,10 @@ local dofiles C:\Users\Rebecca\Documents\GitHub\hcbs_hrs
 //do `dofiles'/waiver_file_prep.do //prepares waiver files for merge
 
 **bring in state level data
-do `dofiles'/geo_data_merge.do
+//do `dofiles'/geo_data_merge.do
 
 **variable cleaning prior to sample size checks
-//do `dofiles'/coding_variables2.do
+do `dofiles'/coding_variables2.do
 
 **first pass at sample sizes - preliminary
 //do `dofiles'/sample_size_tables.do
