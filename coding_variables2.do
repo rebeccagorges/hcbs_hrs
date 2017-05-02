@@ -18,6 +18,15 @@ use hrs_sample2.dta, clear
 ****************************************************************
 tab year, missing
 
+
+****************************************************************
+**Spouse interview completed
+****************************************************************
+tab siwstat, missing
+gen s_ivw_yes=0
+replace s_ivw_yes=1 if siwstat==1
+tab sid_ind s_ivw_yes, missing
+
 ****************************************************************
 **Dementia indicators
 ****************************************************************
@@ -148,11 +157,26 @@ la val dem_vars_cat2 dem_vars_cat
 
 tab dem_vars_cat2, missing
 
+**third version, assigning to dementia ignoring missing, don't use pred dem variable
+gen dem_vars_cat3=0 if inlist(rsr_mem_dis_any,0,.) & inlist(cog_comb,0,.)
+replace dem_vars_cat3=1 if rsr_mem_dis_any==1 & inlist(cog_comb,0,.)
+replace dem_vars_cat3=2 if inlist(rsr_mem_dis_any,0,.) & cog_comb==1
+replace dem_vars_cat3=3 if rsr_mem_dis_any==1 & cog_comb==1
+replace dem_vars_cat3=. if missing(rsr_mem_dis_any) & missing(cog_comb)
+
+tab dem_vars_cat3, missing
+
 **indicator for any dementia indicator
 gen dem_any_vars_ind=0 if dem_vars_cat2==0
 replace dem_any_vars_ind=1 if dem_vars_cat2>0 & !missing(dem_vars_cat2)
 la var dem_any_vars_ind "Dementia indicator, sr mem disease or cog score or pred dem"
 tab dem_vars_cat2 dem_any_vars_ind, missing
+
+**2nd indicator for 65+ group, omits Hurd pred dementia indicator
+gen dem_any_vars_ind_lt70=0 if dem_vars_cat3==0
+replace dem_any_vars_ind_lt70=1 if dem_vars_cat3>0 & !missing(dem_vars_cat3)
+la var dem_any_vars_ind_lt70 "Dementia indicator, sr mem disease or cog score"
+tab dem_vars_cat3 dem_any_vars_ind_lt70, missing
 
 ****************************************************************
 **Long term care / home care categorizations with different variables
