@@ -78,21 +78,31 @@ sort state year
 
 **uses wave year (not interview year) to do the merge 
 **(ex. if ivw was wave 10 (2010) but conducted in 2011, merge with 2010 waiver information)
-merge m:1 state year using hcbs_waivers_tomerge.dta
+//merge m:1 state year using hcbs_waivers_tomerge.dta
+merge m:1 state year using waivers_92_2010_to_merge.dta
 tab _merge
- 
-tab state if _merge==1
-tab year if _merge==1 & state=="RI"
+
+**extra state-year from waiver spreadsheet - odd years, small states
+tab year if _merge==2
+tab state if _merge==2 & year==1998 
+tab state if _merge==2 & year==2000 
+tab state if _merge==2 & year==2002 
+tab state if _merge==2 & year==2004 
 
 drop if _merge==2
 
-**do 2nd time, just bringing in the waiver count variable using interview year
-sort state year
+**what about interviews with no matched waiver information?
+tab state if _merge==1
+tab state if _merge==1 & year==1998
+tab state if _merge==1 & year==2000
+tab state if _merge==1 & year==2002
+tab state if _merge==1 & year==2004
+tab state if _merge==1 & year==2006
+tab state if _merge==1 & year==2008
+tab state if _merge==1 & year==2010
 
-merge m:1 state riwendy using hcbs_waivers_tomerge2.dta, gen(merge2)
-tab merge2
-
-drop if merge2==2
+tab year if _merge==1 & state=="RI"
+tab year if _merge==1
 
 /* notes re missing state-years
 AZ had no waivers
@@ -102,7 +112,8 @@ VT last waiver in 2005
 */
 
 **fill in missing values to 0
-local var wvr_count_sy reciptotall_sy dollartotall_sy svc_code_count_sy svc_code_demsp 
+**fix these with new variable names from updated waiver file!! add in variables for populations, etc!
+local var wvr_count wvr_recipttot dollartotall_sy svc_code_count_sy svc_code_demsp 
 foreach v in `var'{
 replace `v'=0 if _merge==1
 }

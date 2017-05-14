@@ -1,6 +1,7 @@
 **Rebecca Gorges
 **January 2017
 **Pre-Process Medicaid waiver files and merge into single waiver file
+** OLD FILE, replaced with _v2 file!
 
 capture log close
 clear all
@@ -55,6 +56,11 @@ la var pop_10 "Pregnant Women"
 la var pop_11 "Children"
 la var pop_12 "Elderly (age >=60 or 65)"
 la var pop_13 "Not specified,adults,general population"
+
+forvalues i=1/13{
+tab pop_`i',missing
+destring pop_`i',replace
+}
 
 rename e y1990
 rename f y1992
@@ -156,7 +162,7 @@ li wvrnum year2 begdate2 enddate2 year begdate enddate state waivertitle if year
 **missing year2 fields?
 
 **need to address this! these waivers had no end date!
-li state wvrnum waivertitle begdate enddate merge_info if year2==.
+li state wvrnum year waivertitle begdate enddate merge_info if year2==.
 
 li state wvrnum waivertitle begdate enddate year pop_1 pop_12 merge_info if wvrnum=="68.90000000000001"
 li state wvrnum waivertitle begdate enddate year pop_1 pop_12 merge_info if wvrnum=="68"
@@ -225,8 +231,82 @@ replace year2=2015 if state=="SC" & wvrnum=="284" & year==15
 replace enddate2=td(30jun2014) if state=="SC" & wvrnum=="284" & year==14
 replace year2=2014 if state=="SC" & wvrnum=="284" & year==14
 
+** need to fix this - missing target population; for now ignore bc post 2010
+replace enddate2=td(30jun2016) if state=="UT" & wvrnum=="158" & year==16
+replace year2=2016 if state=="UT" & wvrnum=="158" & year==16
+
+replace enddate2=td(30jun2017) if state=="UT" & wvrnum=="158" & year==17
+replace year2=2017 if state=="UT" & wvrnum=="158" & year==17
+
+replace enddate2=td(30jun2018) if state=="UT" & wvrnum=="158" & year==18
+replace year2=2018 if state=="UT" & wvrnum=="158" & year==18
+
+replace enddate2=td(30jun2019) if state=="UT" & wvrnum=="158" & year==19
+replace year2=2019 if state=="UT" & wvrnum=="158" & year==19
+
+replace enddate2=td(30jun2020) if state=="UT" & wvrnum=="158" & year==20
+replace year2=2020 if state=="UT" & wvrnum=="158" & year==20
+
+**check this one 229 is probably 229.9 which exists through 2010
+drop if state=="WI" & wvrnum=="229" & year==. & merge_info==3
+
+replace enddate2=td(31dec2009) if state=="WI" & wvrnum=="433" & year==9
+replace begdate2=td(01jan2009) if state=="WI" & wvrnum=="433" & year==9
+replace year2=2009 if state=="WI" & wvrnum=="433" & year==9
+
+replace enddate2=td(31dec2010) if state=="WI" & wvrnum=="433" & year==10
+replace begdate2=td(01jan2010) if state=="WI" & wvrnum=="433" & year==10
+replace year2=2010 if state=="WI" & wvrnum=="433" & year==10
+
+forvalues i =1/13{
+replace pop_`i'=0 if state=="WI" & wvrnum=="433" & inlist(year2,2009,2010)
+}
+replace pop_5=1 if state=="WI" & wvrnum=="433" & inlist(year2,2009,2010)
+
+replace enddate2=td(31dec2009) if state=="WI" & wvrnum=="484" & year==9
+replace begdate2=td(01jan2009) if state=="WI" & wvrnum=="484" & year==9
+replace year2=2009 if state=="WI" & wvrnum=="484" & year==9
+replace enddate2=td(31dec2010) if state=="WI" & wvrnum=="484" & year==10
+replace begdate2=td(01jan2010) if state=="WI" & wvrnum=="484" & year==10
+replace year2=2010 if state=="WI" & wvrnum=="484" & year==10
+
+replace enddate2=td(31dec2009) if state=="WI" & wvrnum=="485" & year==9
+replace begdate2=td(01jan2009) if state=="WI" & wvrnum=="485" & year==9
+replace year2=2009 if state=="WI" & wvrnum=="485" & year==9
+replace enddate2=td(31dec2010) if state=="WI" & wvrnum=="485" & year==10
+replace begdate2=td(01jan2010) if state=="WI" & wvrnum=="485" & year==10
+replace year2=2010 if state=="WI" & wvrnum=="485" & year==10
+
+replace enddate2=td(31dec2012) if state=="WI" & wvrnum=="7" & year==12
+replace year2=2012 if state=="WI" & wvrnum=="7" & year==12
+replace enddate2=td(31dec2013) if state=="WI" & wvrnum=="7" & year==13
+replace year2=2013 if state=="WI" & wvrnum=="7" & year==13
+replace enddate2=td(31dec2014) if state=="WI" & wvrnum=="7" & year==14
+replace year2=2014 if state=="WI" & wvrnum=="7" & year==14
+replace enddate2=td(31dec2015) if state=="WI" & wvrnum=="7" & year==15
+replace year2=2015 if state=="WI" & wvrnum=="7" & year==15
+replace enddate2=td(31dec2016) if state=="WI" & wvrnum=="7" & year==16
+replace year2=2016 if state=="WI" & wvrnum=="7" & year==16
+replace enddate2=td(31dec2017) if state=="WI" & wvrnum=="7" & year==17
+replace year2=2017 if state=="WI" & wvrnum=="7" & year==17
+replace enddate2=td(31dec2018) if state=="WI" & wvrnum=="7" & year==18
+replace year2=2018 if state=="WI" & wvrnum=="7" & year==18
+replace enddate2=td(31dec2019) if state=="WI" & wvrnum=="7" & year==19
+replace year2=2019 if state=="WI" & wvrnum=="7" & year==19
+
+replace enddate2=td(31dec2009) if state=="WI" & wvrnum=="451" & year==9
+replace begdate2=td(01jan2009) if state=="WI" & wvrnum=="451" & year==9
+replace year2=2009 if state=="WI" & wvrnum=="451" & year==9
+
+replace enddate2=td(31dec2010) if state=="WY" & wvrnum=="451" & year==10
+replace begdate2=td(01jan2010) if state=="WY" & wvrnum=="451" & year==10
+replace year2=2010 if state=="WY" & wvrnum=="451" & year==10
+
+drop if merge_info==2 & year2==.
+
+*************************************************************
+**collapse so one entry per waiver ; just to get sheet to send to Lauren???
 /*
-**collapse so one entry per waiver
 by state wvrnum : egen begdate3=min(begdate2)
 by state wvrnum : egen enddate3=max(enddate2)
 format begdate3 enddate3 %td
@@ -324,22 +404,14 @@ tab dup, missing
 drop dup
 
 export excel using waivers_merged_rg_20170215.xlsx, firstrow(varlabels) replace
+*/
 
 /*append using add_to_target_pop_sheet.dta, gen(sheet)
 la def sheet 0 "orig target pop sheet" 1 "in waivers all but not target pop"
 la val sheet sheet
 tab sheet, missing
 
-
-
-
-
-/*
-
 keep title wvrnum state year2
-
-
-
 
 rename year2 y
 rename title waivertitle
@@ -355,7 +427,7 @@ keep if dup==0
 
 replace y=1900+y if 92<=y<=99
 //replace y=2000+y if 00<=y<=21
-/*
+
 bysort wvrid (waivertitle): replace waivertitle = waivertitle[1]
 gen y2=y
 
@@ -363,40 +435,61 @@ reshape wide y2,i(wvrid) j(y)
 
 save add_to_state_plans_waivers.dta,replace
 
-
-/*
-
 **export into excel
+*/
+drop dup
 
-
-/*
-
-
-sort state year wvrnum
-quietly by state year wvrnum:  gen dup = cond(_N==1,0,_n)
+sort state year2 wvrnum
+quietly by state year2 wvrnum:  gen dup = cond(_N==1,0,_n)
 tab dup, missing
-li state wvrnum year title if dup==4
 
+li state wvrnum year2 waivertitle if dup==5
+
+li state wvrnum year2 year begdate2 enddate2 if state=="NH" & wvrnum=="60"
 *deal with duplicates
 *replace incorrect dates
-replace year=14 if state=="NC" & wvrnum=="1037" & enddate=="31jul2014"
-replace year=15 if state=="NC" & wvrnum=="1037" & enddate=="31jul2015"
-replace year=16 if state=="NC" & wvrnum=="1037" & enddate=="31jul2016"
-replace year=17 if state=="NC" & wvrnum=="1037" & enddate=="31jul2017"
-replace year=18 if state=="NC" & wvrnum=="1037" & enddate=="31jul2018"
+replace enddate2=td(31aug2012) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==1
+replace year2=2012 if enddate2==td(31aug2012) & state=="NH" & wvrnum=="53"
+replace year2=2013 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==2
+replace enddate2=td(31aug2013) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==2
+replace begdate2=td(01sep2012) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==2
+replace year2=2014 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==3
+replace enddate2=td(31aug2014) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==3
+replace begdate2=td(01sep2013) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==3
+replace year2=2015 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==4
+replace enddate2=td(31aug2015) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==4
+replace begdate2=td(01sep2014) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==4
+replace year2=2016 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==5
+replace begdate2=td(01sep2015) if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==5
 
-replace enddate="31aug2012" if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==1
-replace year=13 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==2
-replace enddate="31aug2013" if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==2
-replace begdate="01sep2012" if state=="NH" & wvrnum=="53" & enddate=="31aug2013" & dup==2
-replace year=14 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==3
-replace enddate="31aug2014" if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==3
-replace begdate="01sep2013" if state=="NH" & wvrnum=="53" & enddate=="31aug2014" & dup==3
-replace year=15 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==4
-replace enddate="31aug2015" if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==4
-replace begdate="01sep2014" if state=="NH" & wvrnum=="53" & enddate=="31aug2015" & dup==4
-replace year=16 if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==5
-replace begdate="01sep2015" if state=="NH" & wvrnum=="53" & enddate=="31aug2016" & dup==5
+li year2 begdate2 enddate2 dup if state=="NH" & wvrnum=="53"
+
+replace enddate2=td(31dec2012) if state=="NH" & wvrnum=="397" & begdate2==td(01jan2012)
+replace year2=12 if state=="NH" & wvrnum=="397" & enddate2==td(31dec2012)
+replace enddate2=td(31dec2013) if state=="NH" & wvrnum=="397" & begdate2==td(01jan2013)
+replace year2=13 if state=="NH" & wvrnum=="397" & enddate2==td(31dec2013)
+replace enddate2=td(31dec2014) if state=="NH" & wvrnum=="397" & begdate2==td(01jan2014)
+replace year2=14 if state=="NH" & wvrnum=="397" & enddate2==td(31dec2014)
+replace enddate2=td(31dec2015) if state=="NH" & wvrnum=="397" & begdate2==td(01jan2015)
+replace year2=15 if state=="NH" & wvrnum=="397" & enddate2==td(31dec2015)
+
+replace enddate2=td(30jun2013) if state=="NH" & wvrnum=="60" & begdate2==td(01jul2012)
+replace year2=13 if state=="NH" & wvrnum=="60" & begdate2==td(01jul2012)
+replace enddate2=td(30jun2014) if state=="NH" & wvrnum=="60" & begdate2==td(01jul2013)
+replace year2=14 if state=="NH" & wvrnum=="60" & begdate2==td(01jul2013)
+replace enddate2=td(30jun2015) if state=="NH" & wvrnum=="60" & begdate2==td(01jul2014)
+replace year2=15 if state=="NH" & wvrnum=="60" & begdate2==td(01jul2014)
+replace enddate2=td(30jun2016) if state=="NH" & wvrnum=="60" & begdate2==td(01jul2015)
+replace year2=16 if state=="NH" & wvrnum=="60" & begdate2==td(01jul2015)
+
+drop dup
+sort state year2 wvrnum
+quietly by state year2 wvrnum:  gen dup = cond(_N==1,0,_n)
+tab dup, missing
+
+li state wvrnum year2 begdate2 enddate2 waivertitle if dup==4
+
+/*
 
 *fixed so merge works later
 replace year=99 if state=="DC" & wvrnum=="334" & begdate=="04jan1999" & year==0

@@ -17,22 +17,22 @@ local dofiles C:\Users\Rebecca\Documents\GitHub\hcbs_hrs
 //do `dofiles'/impute_dementia_preprocessing.do 
 
 **impute dementia probabilty following Hurd method
-//do `dofiles'/impute_dementia_probability.do
+do `dofiles'/impute_dementia_probability.do
 
 **check dementia imputations by replicating Hurd tables
 //do `dofiles'/impute_dementia_checks.do
 
 **home care variables created from raw interview questions,helper files
-//do `dofiles'/home_care.do
+do `dofiles'/home_care.do
 
 **waiver files processing
 //do `dofiles'/waivers_master_list_pre.do //original merge of 2 spreadsheets
 //to send to LW for collecting missing target population data
 
-//do `dofiles'/waiver_file_prep.do //prepares waiver files for merge
+do `dofiles'/waiver_file_prep.do //prepares waiver files for merge
 
 **bring in state level data
-//do `dofiles'/geo_data_merge.do
+do `dofiles'/geo_data_merge.do
 
 **variable cleaning prior to sample size checks
 do `dofiles'/coding_variables2.do

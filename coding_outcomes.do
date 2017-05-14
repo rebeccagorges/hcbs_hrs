@@ -165,6 +165,9 @@ la val rlbrf1 slbrf1 lbrf1
 tab rlbrf rlbrf1, missing
 tab slbrf slbrf1, missing
 
+tab rlbrf1, gen(rlbrf1_ind)
+tab slbrf1, gen(slbrf1_ind)
+
 **hours per week worked, add primary job + additional job variables
 ** if not working .w code originally, kept as missing here, may want to review this
 foreach i in r s{
@@ -421,6 +424,22 @@ tab r_race_eth_cat s_race_eth_cat, missing
 **education
 tab raeduc, missing
 tab seduc, missing 
+
+gen r_ed_lt_hs=0  if !missing(raeduc)
+replace r_ed_lt_hs=1 if raeduc==1
+tab raeduc r_ed_lt_hs, missing
+ 
+gen r_ed_hs_only=0 if !missing(raeduc)
+replace r_ed_hs_only=1 if raeduc==3 | raeduc==2 //includes GED
+tab raeduc r_ed_hs_only, missing
+
+gen r_ed_gt_hs=raeduc>3 if !missing(raeduc)
+tab raeduc r_ed_gt_hs, missing
+
+la var r_ed_lt_hs "LT High school education level indicator"
+la var r_ed_hs_only "High school education level indicator (includes GED)"
+la var r_ed_gt_hs "GT high school educ level indicator"
+
 
 **income and assets
 **note income and assets quintiles calculated separately for each wave

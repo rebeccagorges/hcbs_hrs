@@ -247,6 +247,7 @@ la var svc_code_count_syq4_3 "Q3 svc code count"
 la var svc_code_count_syq4_4 "Q4 (top) svc code count"
 la var svc_code_demsp "Home medical care svc code"
 
+**cc count variables
 gen count_ccs_n1=0
 foreach v in rhibp_sr_n1 rdiab_sr_n1 rcancr_sr_n1 rlung_sr_n1 rheart_sr_n1 ///
 rstrok_sr_n1 rpsych_sr_n1 rarthr_sr_n1 {

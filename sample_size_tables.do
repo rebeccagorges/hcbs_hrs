@@ -7,6 +7,11 @@
 
 **Note: Have to manually fill in notes re. sample restrictions
 **on age and spouse interview in the word document with output
+**key:
+** -1 = All r's 65+
+** -2 = R's 65+ with a spouse interview that wave
+** -3 = All r's 70+
+** -4 = R's 70+ with a spouse interview that wave
 
 capture log close
 clear all
@@ -160,6 +165,42 @@ gen sample4=1 if rage_lt_70==0&s_ivw_yes==1
 tab pred_dem_cat1 rage_lt_70, missing
 tab dem_vars_cat2 dem_any_vars_ind, missing
 
+**generate indicators for the three definitions of home care
+**home care using medical home care services question only
+gen ltc_ind1=1 if inlist(r_sr_ltc_cat,1,2,3)
+replace ltc_ind1=0 if r_sr_ltc_cat==0
+
+tab r_sr_ltc_cat ltc_ind1,missing
+
+**home care medical and/or other services questions
+gen ltc_ind2=1 if inlist(r_sr_ltc_cat2,1,2,3)
+replace ltc_ind2=0 if r_sr_ltc_cat2==0
+
+tab r_sr_ltc_cat2 ltc_ind2,missing
+
+**home care medical and/or other services questions and/or adl/iadl helper
+gen ltc_ind3=1 if inlist(r_sr_ltc_cat3,1,2,3)
+replace ltc_ind3=0 if r_sr_ltc_cat3==0
+
+tab r_sr_ltc_cat3 ltc_ind3,missing
+
+** check of ltc - medicaid - spouse splits
+tab s_ivw_yes rmedicaid_sr if rage_lt_65==0, missing 
+
+** ltc from medical care only question
+tab s_ivw_yes rmedicaid_sr if rage_lt_65==0 & ltc_ind1==1, missing 
+** ltc from medical care or other services
+tab s_ivw_yes rmedicaid_sr if rage_lt_65==0 & ltc_ind2==1, missing 
+** ltc from med care, other services, or helper
+tab s_ivw_yes rmedicaid_sr if rage_lt_65==0 & ltc_ind1==1, missing 
+
+
+** check of ltc - medicaid - spouse splits
+** emailed to tables to TK 5/5/17
+tab s_ivw_yes rmedicaid_sr if rage_lt_70==0, missing 
+tab rmstat rmedicaid_sr if rage_lt_70==0, missing 
+tab rmstat rmedicaid_sr if rage_lt_70==0 & ltc_ind2==1, missing 
+
 *********************************************************************
 **create table 1 Dementia status 
 *********************************************************************
@@ -285,11 +326,11 @@ mat tab2=J(4,2,.)
 
 tab r_sr_ltc_cat if sample`j'==1, matcell(t2)
 local n=r(N)
-local r=1
+//local r=1
 forvalues i=1/4 {
-mat tab2[`r',1]=t2[`r',1]
-mat tab2[`r',2]=t2[`r',1]/r(N)*100
-local r = `r'+1
+mat tab2[`i',1]=t2[`i',1]
+mat tab2[`i',2]=t2[`i',1]/r(N)*100
+//local r = `r'+1
 }
 frmttable, statmat(tab2) store(tab2) sdec(0,2)
 
@@ -422,25 +463,9 @@ graph export `logpath'\home_care_vars_venn.tif, as(tif) replace
 *********************************************************************
 **create table 3 Care setting x Dementia, note 3 versions based on hc definition
 *********************************************************************
-**generate indicators for the three definitions of home care
-
-**home care using medical home care services question only
-gen ltc_ind1=1 if inlist(r_sr_ltc_cat,1,2,3)
-replace ltc_ind1=0 if r_sr_ltc_cat==0
-
-tab r_sr_ltc_cat ltc_ind1,missing
-
-**home care medical and/or other services questions
-gen ltc_ind2=1 if inlist(r_sr_ltc_cat2,1,2,3)
-replace ltc_ind2=0 if r_sr_ltc_cat2==0
-
-tab r_sr_ltc_cat2 ltc_ind2,missing
-
-**home care medical and/or other services questions and/or adl/iadl helper
-gen ltc_ind3=1 if inlist(r_sr_ltc_cat3,1,2,3)
-replace ltc_ind3=0 if r_sr_ltc_cat3==0
-
-tab r_sr_ltc_cat3 ltc_ind3,missing
+tab ltc_ind1, missing
+tab ltc_ind2, missing
+tab ltc_ind3, missing
 
 *************************************************************
 **first table

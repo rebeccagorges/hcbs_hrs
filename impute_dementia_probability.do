@@ -75,18 +75,12 @@ label values rage_cat2 age_cat2
 tab rage_cat2, missing
 tab rage_cat2 if !missing(dx) & rproxy==1, missing
 
+***********************************************************
 tab raeduc,missing
 
-gen r_ed_hs_only=0 if !missing(raeduc)
-replace r_ed_hs_only=1 if raeduc==3 | raeduc==2 //includes GED
 tab r_ed_hs_only, missing
 tab r_ed_hs_only if !missing(dx) & rproxy==1, missing
-
-gen r_ed_gt_hs=raeduc>3 if !missing(raeduc)
 tab r_ed_gt_hs raeduc, missing
-
-la var r_ed_hs_only "High school education level indicator (includes GED)"
-la var r_ed_gt_hs "GT high school educ level indicator"
 
 tab radla, missing
 tab radla if !missing(dx) & rproxy==1, missing
