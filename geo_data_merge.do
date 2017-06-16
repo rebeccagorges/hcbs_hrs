@@ -113,27 +113,36 @@ VT last waiver in 2005
 
 **fill in missing values to 0
 **fix these with new variable names from updated waiver file!! add in variables for populations, etc!
-local var wvr_count wvr_recipttot dollartotall_sy svc_code_count_sy svc_code_demsp 
+local var wvr_count wvr_recipttot wvr_dollartot wvr_daystot scode_count
 foreach v in `var'{
 replace `v'=0 if _merge==1
 }
 
-forvalues c = 1/30{
-replace svc_code_`c'_sy=0 if _merge==1
+forvalues i=1/13{
+replace wvr_pop_`i'=0 if _merge==1
 }
 
-replace wvr_count_sy2=0 if merge2==1 //for interview year merged version
+forvalues i=1/30{
+replace scode_`i'_ind=0 if _merge==1
+replace scode_`i'_recips=0 if _merge==1
+replace scode_`i'_dollar=0 if _merge==1
+replace scode_`i'_days=0 if _merge==1
+}
 
-drop _merge merge2
+foreach v in case_manag personal_home_care prof therapy respite residential ///
+supplies_dme transit_drugs {
+replace wvr_`v'_svc=0 if _merge==1
+}
+
+drop _merge
 
 save hrs_sample2.dta, replace
 
 use  hrs_sample2.dta, clear
 forvalues c = 1/30{
-tab svc_code_`c'_sy, missing
+tab scode_`c'_ind, missing
 }
 
-***************************************************
 
 
 ***************************************************

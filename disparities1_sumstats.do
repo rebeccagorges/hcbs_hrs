@@ -22,6 +22,8 @@ cd `data'
 use hrs_sample3.dta, clear
 
 ***********************************************************
+**First variable clean up, creation
+***********************************************************
 tab year, missing
 
 tab rage_cat, missing
@@ -33,6 +35,11 @@ tab cen_non_us, missing
 
 **need to revisit this when get updated geo data
 tab state if cen_non_us==0 
+tab state cen_non_us, missing
+gen state_ind=0 if cen_non_us==1
+replace state_ind=1 if cen_non_us==0
+replace state_ind=0 if cen_non_us==0 & inlist(state,"ZZ","","PR") 
+tab state state_ind, missing
 
 gen sampleyear_ind=1 if year>1996 & year<2012
 replace sampleyear_ind=0 if year==1996 | year==2012
@@ -62,7 +69,39 @@ gen home_care_ind=0 if r_sr_ltc_cat2==1 //nh only
 replace home_care_ind=1 if inlist(r_sr_ltc_cat2,2,3) //home care only + home care + nh
 tab r_sr_ltc_cat2 home_care_ind , missing
 
+**combine nh and respondent level weights
+gen weight_comb=rwtresp
+replace weight_comb=rwtr_nh if rwtresp==0&rwtr_nh!=0
+sum weight_comb, detail
+label var weight_comb "HRS analysis weight, R+NH weights combined"
+
+**cc count variables
+gen count_ccs_n1=0
+foreach v in rhibp_sr_n1 rdiab_sr_n1 rcancr_sr_n1 rlung_sr_n1 rheart_sr_n1 ///
+rstrok_sr_n1 rpsych_sr_n1 rarthr_sr_n1 {
+replace count_ccs_n1=count_ccs_n1+`v' if !missing(`v')
+}
+tab count_ccs_n1 if sample1==1, missing
+gen count_ccs_0_n1=1 if count_ccs_n1==0
+replace count_ccs_0_n1=0 if count_ccs_n1!=0 & !missing(count_ccs_n1)
+gen count_ccs_12_n1=1 if inlist(count_ccs_n1,1,2)
+replace count_ccs_12_n1=0 if count_ccs_n1!=1 & count_ccs_n1!=2 & !missing(count_ccs_n1)
+gen count_ccs_gt2_n1=1 if count_ccs_n1>2 & !missing(count_ccs_n1)
+replace count_ccs_gt2_n1=0 if inlist(count_ccs_n1,0,1,2) & !missing(count_ccs_n1)
+
+foreach v in count_ccs_0_n1 count_ccs_12_n1 count_ccs_gt2_n1{
+tab count_ccs_n1 `v',missing
+}
+
+la var count_ccs_0_n1 "No chronic conditions$^1$"
+la var count_ccs_12_n1 "1 or 2 chronic conditions$^1$"
+la var count_ccs_gt2_n1 "3+ chronic conditions$^1$"
+
+
+*****************************************************************
 **limit sample to adl or iadl difficulty - look at ltss use
+**table just for reference, not in presentation
+*****************************************************************
 tab radlimpair, missing
 tab r_sr_ltc_cat2 radlimpair, missing
 
@@ -89,113 +128,12 @@ ctitles("","No LTC", "Nursing home only" , "Home care only" , "NH + HC") ///
 title("LTSS use by Functional status, %")
 
 **********************************************************
-**Sample selection table
-**Revisit this later to add a restriction of having 2 interviews so can get lagged variables
-**********************************************************
-mat sample_tab=J(9,2,.)
-tab year if sampleyear_ind==1, missing
-mat sample_tab[1,1]=r(N) //full smaple
-
-tab rage_lt_65 if sampleyear_ind==1
-//tab year if rage_lt_65==0 & sampleyear_ind==1
-//mat sample_tab[2,1]=r(N) //age 65+
-
-tab sampleltc_ind if sampleyear_ind==1
-tab year if sampleltc_ind==1 & sampleyear_ind==1
-mat sample_tab[2,1]=r(N) //use long term care services - NH and/or Home Care
-
-//by race
-tab r_race_eth_cat,gen(r_race_eth_cat)
-la var r_race_eth_cat1  "White non-Hispanic" 
-la var r_race_eth_cat2 "Black non-Hispanic" 
-la var r_race_eth_cat3 "Hispanic" 
-la var r_race_eth_cat4 "Other non-Hispanic"
-
-rename r_race_eth_cat1 r_re_white
-rename r_race_eth_cat2 r_re_black
-rename r_race_eth_cat3 r_re_hisp
-rename r_race_eth_cat4 r_re_other
-
-tab r_race_eth_cat if sampleltc_ind==1 & sampleyear_ind==1, matcell(s1)
-mat list s1
-mat sample_tab[3,1]=s1[1,1] //white
-mat sample_tab[4,1]=s1[2,1] //black
-mat sample_tab[5,1]=s1[3,1] //hispanic
-
-tab s_ivw_yes if sampleltc_ind==1  & sampleyear_ind==1
-tab year if sampleltc_ind==1 & s_ivw_yes==1 & sampleyear_ind==1
-mat sample_tab[6,1]=r(N) //have spouse interview
-
-tab r_race_eth_cat if sampleltc_ind==1 & s_ivw_yes==1 & sampleyear_ind==1, matcell(s2)
-mat list s2
-mat sample_tab[7,1]=s2[1,1] //white
-mat sample_tab[8,1]=s2[2,1] //black
-mat sample_tab[9,1]=s2[3,1] //hispanic
-
-mat rownames sample_tab = "1998-2010 Interview"  ///
-"Nursing home and/or HCBS Use" "\qquad White" "\qquad Black" "\qquad Hispanic" /// 
-"Have Spouse Interview" "\qquad White" "\qquad Black" "\qquad Hispanic"
-
-mat list sample_tab
-
-preserve
-keep if sampleyear_ind==1
-sort hhid pn
-by hhid pn : gen dup=_n
-tab dup, missing
-sum dup
-local mean_no_ivws=r(mean)
-keep if dup==1
-tab year 
-mat sample_tab[1,2]=r(N)
-restore
-
-preserve
-keep if sampleyear_ind==1 & sampleltc_ind==1
-sort hhid pn
-by hhid pn : gen dup=_n
-tab dup, missing
-keep if dup==1
-tab year 
-mat sample_tab[2,2]=r(N)
-
-tab r_race_eth_cat , matcell(s1)
-mat list s1
-mat sample_tab[3,2]=s1[1,1] //white
-mat sample_tab[4,2]=s1[2,1] //black
-mat sample_tab[5,2]=s1[3,1] //hispanic
-
-restore
-
-preserve
-keep if sampleyear_ind==1 & sampleltc_ind==1 & s_ivw_yes==1
-sort hhid pn
-by hhid pn : gen dup=_n
-tab dup, missing
-keep if dup==1
-tab year 
-mat sample_tab[6,2]=r(N)
-
-tab r_race_eth_cat , matcell(s2)
-mat list s2
-mat sample_tab[7,2]=s2[1,1] //white
-mat sample_tab[8,2]=s2[2,1] //black
-mat sample_tab[9,2]=s2[3,1] //hispanic
-restore
-
-frmttable using `logpath'/disp_pres_tabl.tex, statmat(sample_tab) sdec(0) ///
-ctitles("", "Interviews", "Individuals") ///
-title("Table 1: Number of Observations") ///
-note("Mean number of interviews per R limited to 1998-2010 sample is `mean_no_ivws'." \ ///
-"Other and missing race,ethnicity omitted from sample counts by race,ethnicity.") ///
-tex replace
-
 **********************************************************
 **Outcomes summary stats
 **********************************************************
-**limit to the analysis sample: by wave, ltc use
+**limit to the analysis sample: by wave, ltc use, state, race=black,white,hispanic
 gen sample1=0
-replace sample1=1 if sampleyear_ind==1 & sampleltc_ind==1
+replace sample1=1 if sampleyear_ind==1 & sampleltc_ind==1 & state_ind==1 & inlist(r_race_eth_cat,0,1,2)
 tab sample1, missing
  
 bys rlbrf1: sum rhours_worked
@@ -234,16 +172,16 @@ la var rhours_worked "Hours worked (among employed)"
 matrix t1=J(1,12,.)
 
 foreach v in rmortality_1yr rmortality_2yr rhosp{
-	tab `v' if sample1==1, missing
-	sum `v' if sample1==1
+	tab `v' if sample1==1 , missing
+	sum `v' if sample1==1 /*[w=weight_comb]*/
 	mat t1[1,1]=r(N)
 	mat t1[1,3]=r(mean)*100
 	
-	sum `v' if sample1==1 & home_care_ind==0
-	mat t1[1,5]=r(N)
+	sum `v' if sample1==1 & home_care_ind==0 /*[w=weight_comb]*/
+ 	mat t1[1,5]=r(N)
 	mat t1[1,7]=r(mean)*100
 	
-	sum `v' if sample1==1 & home_care_ind==1
+	sum `v' if sample1==1 & home_care_ind==1 /*[w=weight_comb]*/
 	mat t1[1,9]=r(N)
 	mat t1[1,11]=r(mean)*100
 
@@ -256,17 +194,17 @@ foreach v in rmortality_1yr rmortality_2yr rhosp{
 
 matrix t1=J(1,12,.)
 local v rhspnit
-	sum `v' if sample1==1
+	sum `v' if sample1==1 [w=weight_comb]
 	mat t1[1,1]=r(N)
 	mat t1[1,3]=r(mean)
 	mat t1[1,4]=r(sd)
 	
-	sum `v' if sample1==1 & home_care_ind==0
+	sum `v' if sample1==1 & home_care_ind==0 /*[w=weight_comb]*/
 	mat t1[1,5]=r(N)
 	mat t1[1,7]=r(mean)
 	mat t1[1,8]=r(sd)
 	
-	sum `v' if sample1==1 & home_care_ind==1
+	sum `v' if sample1==1 & home_care_ind==1 /*[w=weight_comb]*/
 	mat t1[1,9]=r(N)
 	mat t1[1,11]=r(mean)
 	mat t1[1,12]=r(sd)
@@ -284,15 +222,15 @@ rlbrf1_ind1 rlbrf1_ind2 rlbrf1_ind3
 foreach v in `tabvars' {
 	matrix t1=J(1,12,.)
 	tab `v' if sample1==1, missing
-	sum `v' if sample1==1
+	sum `v' if sample1==1 /*[w=weight_comb]*/
 	mat t1[1,1]=r(N)
 	mat t1[1,3]=r(mean)*100
 	
-	sum `v' if sample1==1 & home_care_ind==0
+	sum `v' if sample1==1 & home_care_ind==0 /*[w=weight_comb]*/
 	mat t1[1,5]=r(N)
 	mat t1[1,7]=r(mean)*100
 	
-	sum `v' if sample1==1 & home_care_ind==1
+	sum `v' if sample1==1 & home_care_ind==1 /*[w=weight_comb]*/
 	mat t1[1,9]=r(N)
 	mat t1[1,11]=r(mean)*100
 
@@ -306,17 +244,17 @@ foreach v in `tabvars' {
 
 matrix t1=J(1,12,.)
 local v rhours_worked
-	sum `v' if sample1==1 
+	sum `v' if sample1==1 /*[w=weight_comb]*/
 	mat t1[1,1]=r(N)
 	mat t1[1,3]=r(mean)
 	mat t1[1,4]=r(sd)
 	
-	sum `v' if sample1==1  & home_care_ind==0
+	sum `v' if sample1==1  & home_care_ind==0 /*[w=weight_comb]*/
 	mat t1[1,5]=r(N)
 	mat t1[1,7]=r(mean)
 	mat t1[1,8]=r(sd)
 	
-	sum `v' if sample1==1 & home_care_ind==1
+	sum `v' if sample1==1 & home_care_ind==1 /*[w=weight_comb]*/
 	mat t1[1,9]=r(N)
 	mat t1[1,11]=r(mean)
 	mat t1[1,12]=r(sd)
@@ -360,6 +298,17 @@ tab raeduc r_ed_gt_hs
 la var r_ed_lt_hs "Less than high school"
 la var r_ed_hs_only "HS degree (inc. GED)"
 la var r_ed_gt_hs "Some college + "
+
+tab r_race_eth_cat,gen(r_race_eth_cat)
+la var r_race_eth_cat1  "White non-Hispanic" 
+la var r_race_eth_cat2 "Black non-Hispanic" 
+la var r_race_eth_cat3 "Hispanic" 
+la var r_race_eth_cat4 "Other non-Hispanic"
+
+rename r_race_eth_cat1 r_re_white
+rename r_race_eth_cat2 r_re_black
+rename r_race_eth_cat3 r_re_hisp
+rename r_race_eth_cat4 r_re_other
 
 tab rmedicaid_sr, missing
 
@@ -508,7 +457,7 @@ foreach v in `lagvars' {
 	outreg , replay(table2a) append(table2) store(table2a)
 }
 
-outreg using `logpath'/disparities_tables1 , addtable ///
+outreg using `logpath'/disparities_tables1.doc , addtable ///
 replay(table2a) title("Independent variables summary statistics") ///
 ctitles("","Overall","","","Nursing home","","Home care","" \ ///
 "","N","Mean","N","Mean","N","Mean" ) ///
@@ -564,29 +513,6 @@ tab r_race_eth_cat r_sr_ltc_cat2 if r_sr_ltc_cat2!=0 & r_race_eth_cat!=3 & sampl
 reg rhosp i.r_race_eth_cat#i.home_care_ind if sampleltc_ind==1 & sampleyear_ind==1 & r_race_eth_cat!=3
 ***********************************************************
 ***********************************************************
-**table of rate of use ltc categories by race
-**presentation Table 2
-
-mat table_use=J(3,3,.)
-foreach i in 0 1 2{
-tab r_sr_ltc_cat2 if sample1==1 & r_race_eth_cat==`i', matcell(use)
-mat table_use[1,`i'+1]=use[1,1]/r(N)*100 //% nh only
-mat table_use[2,`i'+1]=use[2,1]/r(N)*100 //% home care only
-mat table_use[3,`i'+1]=use[3,1]/r(N)*100 //% hc+nh
-}
-
-mat list table_use
-mat rownames table_use="Nursing home only, \%" "Home care only, \%" "Nursing home and home care, \%"
-
-frmttable using `logpath'/disp_pres_tabl.tex, statmat(table_use) sdec(2) ///
-ctitles("", "White", "Black", "Hispanic") ///
-title("Table 2: LTSS by Race and Ethnicity") ///
-note("HRS 1998-2010 sample limited to respondents reporting LTC utilization." \ ///
-"Other and missing race,ethnicity omitted."\ ///
-"Chi-squared test of equal LTSS by race categories: p<0.001") ///
-tex addtable
-
-tab r_race_eth_cat r_sr_ltc_cat2 if r_sr_ltc_cat2!=0 & r_race_eth_cat!=3 & sample1==1, chi
 
 ***********************************************************
 ***********************************************************
@@ -687,28 +613,6 @@ note("HRS 1998-2010 waves, subsample receiving LTSS" \ ///
 ***********************************************************
 **table of characteristics (x variables) by race category and hc use
 
-**cc count variables
-gen count_ccs_n1=0
-foreach v in rhibp_sr_n1 rdiab_sr_n1 rcancr_sr_n1 rlung_sr_n1 rheart_sr_n1 ///
-rstrok_sr_n1 rpsych_sr_n1 rarthr_sr_n1 {
-replace count_ccs_n1=count_ccs_n1+`v' if !missing(`v')
-}
-tab count_ccs_n1 if sample1==1, missing
-gen count_ccs_0_n1=1 if count_ccs_n1==0
-replace count_ccs_0_n1=0 if count_ccs_n1!=0 & !missing(count_ccs_n1)
-gen count_ccs_12_n1=1 if inlist(count_ccs_n1,1,2)
-replace count_ccs_12_n1=0 if count_ccs_n1!=1 & count_ccs_n1!=2 & !missing(count_ccs_n1)
-gen count_ccs_gt2_n1=1 if count_ccs_n1>2 & !missing(count_ccs_n1)
-replace count_ccs_gt2_n1=0 if inlist(count_ccs_n1,0,1,2) & !missing(count_ccs_n1)
-
-foreach v in count_ccs_0_n1 count_ccs_12_n1 count_ccs_gt2_n1{
-tab count_ccs_n1 `v',missing
-}
-
-la var count_ccs_0_n1 "No chronic conditions$^1$"
-la var count_ccs_12_n1 "1 or 2 chronic conditions$^1$"
-la var count_ccs_gt2_n1 "3+ chronic conditions$^1$"
-
 local v ragey_e //additional columns for mean,sd reported
 matrix t1=J(1,12,.)
 
@@ -732,7 +636,6 @@ outreg , replay(table2a) append(table2) store(table2a)
 matrix t1=J(1,6,.)
 
 foreach v in r_female_ind r_ed_lt_hs r_ed_hs_only r_ed_gt_hs rmedicaid_sr {
-
 
 	foreach i in 0 1 2{
 	
@@ -786,6 +689,7 @@ note("HRS 1998-2010 waves, subsample receiving long-term care" \ ///
 
 ***********************************************************
 **Spouse outcomes by race, LTC use
+***********************************************************
 la var shosp "S Any hospitalization, \%"
 la var shspnit "S Hospital nights"
 //la var hosptim "Number hospitalizations"
@@ -809,100 +713,29 @@ la var slbrf1_ind3 "S Out of labor force, \%"
 la var sunemp_ind "S Unemployed, \%"
 la var shours_worked "S Hours worked (among employed)"
 
-mata: mata clear
-matrix t1=J(1,6,.)
-foreach v in smortality_1yr smortality_2yr shosp {
-
-foreach i in 0 1 2{
-	sum `v' if sample1==1 & home_care_ind==0 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`i'+1]=r(mean)*100 
-	
-	sum `v' if sample1==1 & home_care_ind==1 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`i'+4]=r(mean)*100
-}
-	mat rownames t1=`v'
-	mat list t1
-	
-	frmttable , statmat(t1) store(table1) sdec(2) varlabels 
-	outreg , replay(table1a) append(table1) store(table1a)
-}
-
-matrix t1=J(1,12,.) //additional columns for mean,sd reported
-local v shspnit	
-local c = 1
-foreach i in 0 1 2{
-	sum `v' if sample1==1 & home_care_ind==0 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`c']=r(mean)
-	mat t1[1,`c'+1]=r(sd)
-	
-	sum `v' if sample1==1 & home_care_ind==1 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`c'+6]=r(mean)
-	mat t1[1,`c'+7]=r(sd)
-	
-	local c = `c'+2
-}
-	mat rownames t1=`v'
-	mat list t1
-	
-frmttable , statmat(t1) store(table1) sdec(2) varlabels substat(1)
-outreg , replay(table1a) append(table1) store(table1a)
-
-local tabvars sshlt_fp shlthlm1 sbmi_not_normal sadl_diff siadl_diff ///
-sdepres seffort ssleepr swhappy sflone sfsad sgoing senlife scesd_gt3 ///
-slbrf1_ind1 slbrf1_ind2 slbrf1_ind3 
-
-matrix t1=J(1,6,.)		
-foreach v in `tabvars' {
-	foreach i in 0 1 2{
-	
-	sum `v' if sample1==1 & home_care_ind==0 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`i'+1]=r(mean)*100
-	
-	sum `v' if sample1==1 & home_care_ind==1 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`i'+4]=r(mean)*100
-	}
-	mat rownames t1=`v'
-	mat list t1
-
-	frmttable , statmat(t1) store(table1) sdec(2) varlabels
-	outreg , replay(table1a) append(table1) store(table1a)
-
-}	
-
-matrix t1=J(1,12,.) //additional columns for mean,sd reported
-local v shours_worked
-
-local c = 1
-foreach i in 0 1 2{
-	sum `v' if sample1==1 & home_care_ind==0 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`c']=r(mean)
-	mat t1[1,`c'+1]=r(sd)
-	
-	sum `v' if sample1==1 & home_care_ind==1 & s_ivw_yes==1 & r_race_eth_cat==`i'
-	mat t1[1,`c'+6]=r(mean)
-	mat t1[1,`c'+7]=r(sd)
-	
-	local c = `c'+2
-}
-
-	mat rownames t1=`v'
-	mat list t1
-	
-frmttable , statmat(t1) store(table1) sdec(2) varlabels substat(1)
-outreg , replay(table1a) append(table1) store(table1a)
-
-outreg using `logpath'/disp_pres_tab2.tex, tex landscape addtable ///
-replay(table1a)  title("Table 5: Spouse Outcomes by HCBS Use and Race/Ethnicity") ///
-ctitles("","Nursing Home","","","Home care","","" \ ///
-"","White","Black","Hispanic","White","Black","Hispanic" ) ///
-multicol(1,2,3;1,5,3) ///
-note("HRS 1998-2010 waves, subsample receiving LTSS with spouse interview" \ ///
-"Nursing home only vs home care and home care and nursing home care" \ ///
-"Health limits work = observation omitted if reports doesn't work" \ ///
-"Wave 7 health limits work assumed yes if yes previous wave - data problem")
+**table moved into presentation tables .do file
 
 ***********************************************************
+***********************************************************
+** Table of potential waiver information??
+la var wvr_pop_1 "Intellectual Disabilities (ID)/ Mental Retardation (MR)"
+la var wvr_pop_2 "Physical Disabilities"
+la var wvr_pop_3 "Blind"
+la var wvr_pop_4 "Developmental Disabilities (DD)"
+la var wvr_pop_5 "Mental Health Disorders"
+la var wvr_pop_6 "Autism"
+la var wvr_pop_7 "Alzheimers"
+la var wvr_pop_8 "Brain Injury (BI)"
+la var wvr_pop_9 "HIV/AIDS"
+la var wvr_pop_10 "Pregnant Women"
+la var wvr_pop_11 "Children"
+la var wvr_pop_12 "Elderly (age >=60 or 65)"
+la var wvr_pop_13 "Not specified,adults,general population"
+***********************************************************
+tab wvr_pop_12 home_care_ind if sample1==1, chi2
+tab wvr_personal_home_care_svc home_care_ind if sample1==1, chi2
 
+***********************************************************
 save hrs_sample_disparities.dta, replace
 
 ***********************************************************

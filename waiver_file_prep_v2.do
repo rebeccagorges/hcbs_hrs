@@ -15,7 +15,7 @@ cd `data'
 
 **********************************************************
 **file with target population data, originally in wide format
-/*
+/**/
 **will merge just on state and waiver number
 import excel using `data'/waivers/waivers_merged_lw_20170404.xlsx, ///
 firstrow case(l) sheet("Sheet1") 
@@ -171,6 +171,26 @@ gen scode_`i'_days_tot=0
 		}
 	}
 
+**check these totals vs the totals
+gen dollar_total_check=0
+forvalues t = 1/169{
+	replace dollar_total_check=dollar_total_check+dollar`t' if !missing(dollar`t')
+	}
+
+gen compar=dollar_total_check-dollarto
+sum compar, detail
+**extreme low values don't have individual service code totals but do have overall total in the ds
+**extreme high values just don't match between total and the individual service code totals, concentrated in MO 2006
+
+gen dollar_total_check2=0
+forvalues i = 1/30{
+replace dollar_total_check2=dollar_total_check2+scode_`i'_dollar_tot if !missing(scode_`i'_dollar_tot)
+}
+gen compar2=dollar_total_check2-dollarto
+sum compar2, detail
+**similar to above comparison; at least I'm doing the aggregation correctly
+
+
 **now create totals over instances of duplicates by state-year-waiver
 sort state wvrnum year2
 forvalues  i = 1/30{	
@@ -184,8 +204,17 @@ egen reciptot_a=total(reciptot), by(state wvrnum year2)
 egen dollartot_a=total(dollarto), by(state wvrnum year2)
 egen daystot_a=total(daystot), by(state wvrnum year2)
 
+**check
+gen dollar_total_check3=0
+forvalues i = 1/30{
+replace dollar_total_check3=dollar_total_check3+scode_`i'_dollar_a if !missing(scode_`i'_dollar_a)
+}
+gen compar3=dollar_total_check3-dollartot_a
+sum compar3, detail
 
 **drop variables/duplicates, rename variables
+drop compar compar2 compar3 dollar_total_check dollar_total_check2 dollar_total_check3
+
 forvalues  i = 1/169{	
 drop scode`i' recips`i' dollar`i' days`i'
 }
@@ -263,7 +292,7 @@ drop if _merge==2
 
 drop _merge
 
-save waivers_92_2010_clean_targetpop.dta,replace */
+save waivers_92_2010_clean_targetpop.dta,replace /**/
 ****************************************************
 **now need to get dataset down to state-year level to merge with HRS
 ****************************************************
@@ -352,7 +381,7 @@ li state year wvrnum begdate2
 restore */
 
 ********************************************************************
-**now one observation per each year-waiver id
+**now one observation per each state-year
 bys state year2 : gen n=_n
 keep if n==1
 drop n
@@ -380,6 +409,15 @@ rename pop_`c'_a wvr_pop_`c'
 }
 
 rename year2 year
+
+**new variable for count of service codes offered (0=none;30=max)
+gen scode_count=0
+forvalues i=1/30{
+replace scode_count=scode_count+1 if scode_`i'_ind==1
+}
+la var scode_count "Waiver - count of service codes"
+tab scode_count,missing
+
 ********************************************************************
 save waivers_92_2010_to_merge.dta, replace
 

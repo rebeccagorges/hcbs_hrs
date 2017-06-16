@@ -29,7 +29,8 @@ do `dofiles'/home_care.do
 //do `dofiles'/waivers_master_list_pre.do //original merge of 2 spreadsheets
 //to send to LW for collecting missing target population data
 
-do `dofiles'/waiver_file_prep.do //prepares waiver files for merge
+//do `dofiles'/waiver_file_prep.do //old version
+do `dofiles'/waiver_file_prep_v2.do //prepares waiver files for merge
 
 **bring in state level data
 do `dofiles'/geo_data_merge.do
