@@ -43,3 +43,6 @@ do `dofiles'/coding_variables2.do
 
 **exploring iv's
 //do `dofiles'/iv_work.do
+
+**additional exploratory work, including time trends
+//do `dofiles'/sample_size_tables_2.do

@@ -12,7 +12,7 @@ log using C:\Users\Rebecca\Documents\UofC\research\hcbs\logs\waiver_data_prep_v2
 local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 
 cd `data'
-
+/*
 **********************************************************
 **file with target population data, originally in wide format
 /**/
@@ -419,7 +419,23 @@ la var scode_count "Waiver - count of service codes"
 tab scode_count,missing
 
 ********************************************************************
-save waivers_92_2010_to_merge.dta, replace
+save waivers_92_2010_to_merge.dta, replace 
+********************************************************************
+*/
+use waivers_92_2010_to_merge.dta, clear
 
+**create map of waiver info for 2010 (just a test to get a map made)
+keep if year==2010
+
+rename state STATE
+
+local stateloc C:\Users\Rebecca\Documents\UofC\research\geo_shape_files\states
+
+merge 1:1 STATE using `stateloc'\usdb2.dta 
+
+tab STATE if _merge==2
+drop if inlist(STATE,"AS","GU","MP","PR","VI")
+
+spmap wvr_count using `stateloc'\uscoord if id !=1 & id!=56, id(id) fcolor(Blues)
 ********************************************************************
 log close

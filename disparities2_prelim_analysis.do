@@ -57,7 +57,18 @@ la var nhbed_st "NH Beds/1000 residents"
 la var homehealthagencies_st "Number home health agencies"
 la var nursingfacilities_st "Nursing facilities"
 
-local wvrvars_d wvr_pop_7 wvr_pop_12 wvr_case_manag_svc wvr_personal_home_care_svc ///
+**get waiver participants per 1000 population
+gen wvr_bene_per_cap = wvr_recipttot/tot_pop_st*1000
+sum wvr_bene_per_cap, detail
+
+sca m=r(p50)
+gen wvrbenpercap_gtp50 = 1 if wvr_bene_per_cap>m  
+replace wvrbenpercap_gtp50 = 0 if wvr_bene_per_cap<=m 
+sum wvr_bene_per_cap if wvrbenpercap_gtp50==1
+sum wvr_bene_per_cap if wvrbenpercap_gtp50==0
+
+la var wvrbenpercap_gtp50 "Waiver beneficaries/1000 pop gt median"
+local wvrvars_d wvrbenpercap_gtp50 wvr_pop_7 wvr_pop_12 wvr_case_manag_svc wvr_personal_home_care_svc ///
  wvr_therapy_svc wvr_respite_svc wvr_residential_svc ///
  wvr_transit_drugs_svc 
  
@@ -200,6 +211,17 @@ local iv wvrcount_gtp50
 xi: reg home_care_ind `iv' `xvars2' i.state i.year [aw=tot_pop_st], vce(cluster hhidpn)
 xi: reg home_care_ind `iv' `xvars2' i.state i.year /*[aw=tot_pop_st]*/, vce(cluster hhidpn)
 
+**try IV with beneficaries per capita gt/lt median
+local iv wvrbenpercap_gtp50
+xi: reg home_care_ind `iv' `xvars2' i.state i.year [aw=tot_pop_st], vce(cluster hhidpn)
+xi: reg home_care_ind `iv' `xvars2' i.state i.year /*[aw=tot_pop_st]*/, vce(cluster hhidpn)
+
+**also continuous iv
+local iv wvr_bene_per_cap
+xi: reg home_care_ind `iv' `xvars2' i.state i.year [aw=tot_pop_st], vce(cluster hhidpn)
+xi: reg home_care_ind `iv' `xvars2' i.state i.year /*[aw=tot_pop_st]*/, vce(cluster hhidpn)
+
+**********************************8
 sum scode_count, detail
 sca m=r(p50)
 gen scodecount_gtp50 = 1 if scode_count>m & !missing(scode_count)
