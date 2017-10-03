@@ -50,6 +50,7 @@ gen ltc_ind3=1 if inlist(r_sr_ltc_cat3,1,2,3)
 replace ltc_ind3=0 if r_sr_ltc_cat3==0
 
 tab r_sr_ltc_cat3 ltc_ind3,missing
+
 *********************************************************************
 ** Plot of care setting among R's reporting nursing home and/or home care
 *********************************************************************
@@ -87,84 +88,136 @@ graph save plot1, replace
 restore
 
 graph combine plot1.gph plot2.gph
-*********************************************************************
-** For high vs low HCBS states
-** Combine so nursing home only vs home care only + nh+hc categories
-*********************************************************************
-gen statecat=1 if inlist(state,"MS","IN","FL") //low HCBS share states
-replace statecat=2 if inlist(state,"OR","MN","NM") //high HCBS share states
-** classified using 2014 LTSS Share, top and bottom 3 states
+graph export `logpath'\treat_time1.pdf, replace
 
-gen ltc_cat_binary=1 if r_sr_ltc_cat2==2 | r_sr_ltc_cat2==3
-replace ltc_cat_binary=0 if r_sr_ltc_cat2==1 //nh only
-/*
+*********************************************************************
+** Plot of care setting among R's reporting nursing home and/or home care
+** Now care setting breakdown nursing home only vs home care + nh together
+*********************************************************************
 preserve
-drop if statecat!=1
-tab ltc_cat_binary , gen(ltc_cat_ind) 
+tab r_sr_ltc_cat2 if r_sr_ltc_cat2!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2 , by(year)
 
-collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
-la var ltc_cat_ind1 "Nursing home only"
-la var ltc_cat_ind2 "Home care (nh+hc and hc only)"
+la var ltc_cat_ind1 "Nursing home"
+la var ltc_cat_ind2 "Home care"
 sort year
 scatter ltc_cat_ind1 year,connect(l) ///
 	|| scatter ltc_cat_ind2 year,connect(l) ///
 	title("Share of LTC users, by setting") ///
-	note("LTC defn 2, low HCBS states in 2014: MS, IN, FL") 
-graph save plot1, replace
-
-restore
-
-preserve
-drop if statecat!=2
-tab ltc_cat_binary , gen(ltc_cat_ind) 
-
-collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
-la var ltc_cat_ind1 "Nursing home only"
-la var ltc_cat_ind2 "Home care (nh+hc and hc only)"
-sort year
-scatter ltc_cat_ind1 year,connect(l) ///
-	|| scatter ltc_cat_ind2 year,connect(l) ///
-	title("Share of LTC users, by setting") ///
-	note("LTC defn 2, high HCBS states in 2014: OR, MN, NM") 
+	note("LTC defn 2: medical services and/or other services; Home care includes those with both NH and HC") 
 graph save plot2, replace
 
 restore
-graph combine plot1.gph plot2.gph
-*/
 *********************************************************************
-**limit to medicaid 
-*********************************************************************
+preserve
+tab r_sr_ltc_cat if r_sr_ltc_cat!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
 
+la var ltc_cat_ind1 "Nursing home"
+la var ltc_cat_ind2 "Home care"
+sort year
+scatter ltc_cat_ind1 year,connect(l) ///
+	|| scatter ltc_cat_ind2 year,connect(l) ///
+	title("Share of LTC users, by setting") ///
+	note("LTC defn 1: medical services only; Home care includes those with both NH and HC") 
+graph save plot1, replace
+restore
+
+graph combine plot1.gph plot2.gph
+graph export `logpath'\treat_time2.pdf, replace
+
+
+*********************************************************************
+**limit to medicaid, treat vs control categories only
+*********************************************************************
+preserve
 drop if rmedicaid_sr==0
-preserve
-drop if statecat!=1
-tab ltc_cat_binary , gen(ltc_cat_ind) 
 
-collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
-la var ltc_cat_ind1 "Nursing home only"
-la var ltc_cat_ind2 "Home care (nh+hc and hc only)"
+tab r_sr_ltc_cat2 if r_sr_ltc_cat2!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2 , by(year)
+
+la var ltc_cat_ind1 "Nursing home"
+la var ltc_cat_ind2 "Home care"
 sort year
 scatter ltc_cat_ind1 year,connect(l) ///
 	|| scatter ltc_cat_ind2 year,connect(l) ///
-	title("Share of LTC users, by setting") ///
-	note("LTC defn 2, low HCBS states in 2014: MS, IN, FL") 
-graph save plot1, replace
-
-restore
-
-preserve
-drop if statecat!=2
-tab ltc_cat_binary , gen(ltc_cat_ind) 
-
-collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
-la var ltc_cat_ind1 "Nursing home only"
-la var ltc_cat_ind2 "Home care (nh+hc and hc only)"
-sort year
-scatter ltc_cat_ind1 year,connect(l) ///
-	|| scatter ltc_cat_ind2 year,connect(l) ///
-	title("Share of LTC users, by setting") ///
-	note("LTC defn 2, high HCBS states in 2014: OR, MN, NM") 
+	title("Medicaid sample: Share of LTC users, by setting") ///
+	note("LTC defn 2: medical services and/or other services; Home care includes those with both NH and HC") 
 graph save plot2, replace
 
 restore
+*********************************************************************
+preserve
+tab r_sr_ltc_cat if r_sr_ltc_cat!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2  , by(year)
+
+la var ltc_cat_ind1 "Nursing home"
+la var ltc_cat_ind2 "Home care"
+sort year
+scatter ltc_cat_ind1 year,connect(l) ///
+	|| scatter ltc_cat_ind2 year,connect(l) ///
+	title("Medicaid sample: Share of LTC users, by setting") ///
+	note("LTC defn 1: medical services only; Home care includes those with both NH and HC") 
+graph save plot1, replace
+restore
+
 graph combine plot1.gph plot2.gph
+graph export `logpath'\treat_time3.pdf, replace
+
+*********************************************************************
+**by state
+*********************************************************************
+preserve
+
+tab r_sr_ltc_cat if r_sr_ltc_cat!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2 ,by(state year)
+
+la var ltc_cat_ind2 "Home care"
+
+sort state year
+twoway connected ltc_cat_ind2 year, connect(L) ///
+title("Share of LTC users with Home Care") ///
+note("LTC defn 1: medical services only; Home care includes those with both NH and HC") 
+graph save plot1, replace
+restore
+
+**now medicaid only
+preserve
+drop if rmedicaid_sr==0
+
+tab r_sr_ltc_cat if r_sr_ltc_cat!=0, gen(ltc_cat_ind) 
+replace ltc_cat_ind2=1 if ltc_cat_ind3==1
+collapse ltc_cat_ind1 ltc_cat_ind2 ,by(state year)
+
+la var ltc_cat_ind2 "Home care"
+
+sort state year
+twoway connected ltc_cat_ind2 year, connect(L) ///
+title("Medicaid sample: Share of LTC users with Home Care") ///
+note("LTC defn 1: medical services only; Home care includes those with both NH and HC") 
+graph save plot2, replace
+restore
+
+graph combine plot1.gph plot2.gph
+graph export `logpath'\treat_time4.pdf, replace
+
+*********************************************************************
+**count of observations per state-year
+
+sort state year
+by state year : gen dup = cond(_N==1,0,_n) //number observation
+by state year : egen nobs=max(dup)
+
+keep if inlist(dup,0,1)
+ 
+li state year nobs
+
+
+ 
+*********************************************************************
+log close

@@ -115,7 +115,7 @@ outreg , replay(table_iva) append(table_iv) store(table_iva)
 
 
 outreg using `logpath'/disp_pres_tab3.tex, tex landscape replace ///
-replay(table_iva)  title("Table 6: HCBS Waivers, Expendiures") ///
+replay(table_iva)  title("Table 6: HCBS Waivers, Expenditures") ///
 ctitles("","Nursing Home","Home care","P-value") ///
 note("HRS 1998-2010 waves, subsample receiving LTSS " \ ///
 "Nursing home only vs home care and home care and nursing home care" \ ///
