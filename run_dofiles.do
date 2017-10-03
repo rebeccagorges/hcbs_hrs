@@ -25,16 +25,29 @@ do `dofiles'/impute_dementia_probability.do
 **home care variables created from raw interview questions,helper files
 do `dofiles'/home_care.do
 
-**waiver files processing
+*********************************************
+**State Medicaid LTC data processing
+
 //do `dofiles'/waivers_master_list_pre.do //original merge of 2 spreadsheets
 //to send to LW for collecting missing target population data
 
+**prepares USCF provided waiver files for merge
 //do `dofiles'/waiver_file_prep.do //old version
-do `dofiles'/waiver_file_prep_v2.do //prepares waiver files for merge
+//do `dofiles'/waiver_file_prep_v2.do 
+
+**prepares Eiken Truven Report HCBS Expenditures data for merge
+//do C:\Users\Rebecca\Documents\GitHub\misc_data_setup/mcaid_expend_data_prep.do
+
+**prepares KFF HCBS Program data for merge
+//do C:\Users\Rebecca\Documents\GitHub\misc_data_setup/kff_hcbs_data_prep.do
+
+**merges the three Medicaid state-year level datasets together
+//do `dofiles'/state_data_merge.do
 
 **bring in state level data
 do `dofiles'/geo_data_merge.do
 
+******************************************************
 **variable cleaning prior to sample size checks
 do `dofiles'/coding_variables2.do
 

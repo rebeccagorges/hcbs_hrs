@@ -16,14 +16,11 @@ local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 cd `data'
 
 **********************************************************
-
+/*
 **open original file from Jing
 local jdpath "C:\Users\Rebecca\Documents\UofC\research\hcbs\from_jing_20161006_data"
 
 use `jdpath'\reg_ready.dta
-
-
-/*
 
 keep hhidpn shhidpn year wave state totpop ptotf ptotm p65m p65f p85m p85f ///
  hpicmb nhbed tot85 tot65 nhbed1k nhbed1k65 nhbed1k85 CCRC ALR ILR ttlhcbsexp homehealthppl ///
@@ -50,8 +47,6 @@ save geo_to_merge.dta, replace
 
 */
 **********************************************************
-
-
 ***********************************************k***********
 **merge into dataset
 
@@ -79,7 +74,7 @@ sort state year
 **uses wave year (not interview year) to do the merge 
 **(ex. if ivw was wave 10 (2010) but conducted in 2011, merge with 2010 waiver information)
 //merge m:1 state year using hcbs_waivers_tomerge.dta
-merge m:1 state year using waivers_92_2010_to_merge.dta
+merge m:1 state year using Medicaid_state_data_combined.dta
 tab _merge
 
 **extra state-year from waiver spreadsheet - odd years, small states

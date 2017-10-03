@@ -1,5 +1,6 @@
 **New waiver prep file
-**Takes initial file from Terence NG UCSF
+**Takes initial file from Terence Ng UCSF years 1992-2010
+**Adds in 2012 file received from Charlene Harrington UCSF 2012
 **Adds waiver description by year
 **Collapses to state-year with waiver counts, totals by service code
 
@@ -12,7 +13,7 @@ log using C:\Users\Rebecca\Documents\UofC\research\hcbs\logs\waiver_data_prep_v2
 local data C:\Users\Rebecca\Documents\UofC\research\hcbs\data
 
 cd `data'
-/*
+
 **********************************************************
 **file with target population data, originally in wide format
 /**/
@@ -274,11 +275,77 @@ foreach i in 21 22 28{
 replace transit_drugs_svc=1 if scode_`i'_ind==1
 }
 
+drop factord zj factorg zl
+
 save waivers_92_2010_clean.dta,replace
 clear
 ******************************************************************
 ******************************************************************
-**merge the two sheets by waiver number, state
+** Now set up the 2012 data from Excel (separate spreadsheet)
+******************************************************************
+/*import excel using "`data'/misc_other_raw/HCBS Services data for Waivers 2012 from Terence.xlsx", ///
+firstrow case(l) sheet("Sheet3") 
+save hcbs_waivers_2012_raw_orig.dta, replace */
+
+use hcbs_waivers_2012_raw_orig.dta, clear
+
+gen year2=2012
+
+**indicators for target populations
+forvalues i = 1/13{
+gen byte pop_`i'=0
+}
+replace pop_1=1 if participantgroup=="IDD"
+replace pop_2=1 if participantgroup=="Physically Disabled" | participantgroup=="Elderly/Disabled"
+replace pop_5=1 if participantgroup=="Mental Health"
+replace pop_8=1 if participantgroup=="TBI/SCI" //tbi=traumatic brain injury
+replace pop_9=1 if participantgroup=="HIV/AIDS"
+replace pop_11=1 if participantgroup=="Children"
+replace pop_12=1 if (participantgroup=="Elderly" | participantgroup=="Elderly/Disabled")
+
+la var pop_1 "Intellectual Disabilities (ID)/ Mental Retardation (MR)"
+la var pop_2 "Physical Disabilities"
+la var pop_3 "Blind"
+la var pop_4 "Developmental Disabilities (DD)"
+la var pop_5 "Mental Health Disorders"
+la var pop_6 "Autism"
+la var pop_7 "Alzheimers"
+la var pop_8 "Brain Injury (BI)"
+la var pop_9 "HIV/AIDS"
+la var pop_10 "Pregnant Women"
+la var pop_11 "Children"
+la var pop_12 "Elderly (age >=60 or 65)"
+la var pop_13 "Not specified,adults,general population"
+
+**indicators for service code groupings
+**note at through bf are blank so don't go through them here
+local svccols service j n r v z ad ah al ap 
+local svcvars case_manag_svc personal_home_care_svc prof_svc therapy_svc respite_svc residential_svc supplies_dme_svc transit_drugs_svc
+
+foreach v in `svcvars'{
+gen byte `v'=0
+}
+
+foreach c in `svccols'{
+replace personal_home_care_svc=1 if `c'=="Personal Care"
+replace personal_home_care_svc=1 if `c'=="Homemaker"
+replace respite_svc=1 if `c'=="Respite"
+replace supplies_dme_svc=1 if `c'=="Home Mod"
+}
+replace residential_svc=1 if r=="17" //one row didn't get converted from original service codes
+
+foreach v in `svcvars'{
+tab `v', missing
+}
+
+rename waivernumber wvrnum
+
+keep state wvrnum waivertitle year pop_* *_svc
+save waivers_2012_to_merge.dta, replace 
+
+******************************************************************
+******************************************************************
+**merge the two sheets 1992-2010 data by waiver number, state
 use waivers_92_2010_clean.dta, clear
 sort state wvrnum
 merge m:1 state wvrnum using hcbs_waiver_targetpop_raw_full.dta
@@ -293,10 +360,20 @@ drop if _merge==2
 drop _merge
 
 save waivers_92_2010_clean_targetpop.dta,replace /**/
+
+**append the 2012 data
+use waivers_92_2010_clean_targetpop.dta, clear
+append using waivers_2012_to_merge.dta
+
+tab year2, missing
+sort state wvrnum year2
+
+save waivers_92_2012_clean.dta,replace /**/
+
 ****************************************************
 **now need to get dataset down to state-year level to merge with HRS
 ****************************************************
-use waivers_92_2010_clean_targetpop.dta,clear
+use waivers_92_2012_clean.dta,clear
 
 drop dup
 
@@ -419,9 +496,9 @@ la var scode_count "Waiver - count of service codes"
 tab scode_count,missing
 
 ********************************************************************
-save waivers_92_2010_to_merge.dta, replace 
+save waivers_92_2012_to_merge.dta, replace 
 ********************************************************************
-*/
+/*
 use waivers_92_2010_to_merge.dta, clear
 
 **create map of waiver info for 2010 (just a test to get a map made)
@@ -437,5 +514,6 @@ tab STATE if _merge==2
 drop if inlist(STATE,"AS","GU","MP","PR","VI")
 
 spmap wvr_count using `stateloc'\uscoord if id !=1 & id!=56, id(id) fcolor(Blues)
+*/
 ********************************************************************
 log close
